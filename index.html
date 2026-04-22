@@ -841,6 +841,7 @@
     <div class="url-input-group">
       <input type="url" id="apiUrl" placeholder="https://script.google.com/macros/s/...">
       <button onclick="saveUrl()">Save</button>
+      <button onclick="testConnection()" style="background: var(--surface-raised); color: var(--accent); border: 1px solid var(--border);">Test</button>
     </div>
   </div>
 
@@ -995,6 +996,32 @@
     } else {
       banner.className = 'config-banner';
       banner.innerHTML = '<p>⚠️ Paste your Google Apps Script Web App URL below to connect</p>';
+    }
+  }
+
+  async function testConnection() {
+    const url = getApiUrl();
+    if (!url) {
+      showToast('Save a URL first', 'error');
+      return;
+    }
+    showToast('Testing connection...', 'success');
+    try {
+      const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+      const data = await response.json();
+      if (data && data.success) {
+        showToast('✅ Connection OK — API is running', 'success');
+        const banner = document.getElementById('configBanner');
+        banner.className = 'config-banner ready';
+        banner.innerHTML = '<p>✅ Connected and verified</p>';
+      } else {
+        showToast('⚠️ Response received but unexpected format', 'error');
+      }
+    } catch (err) {
+      showToast('❌ Connection failed: ' + err.message, 'error');
+      const banner = document.getElementById('configBanner');
+      banner.className = 'config-banner';
+      banner.innerHTML = '<p>❌ Connection failed — check URL and deployment settings</p>';
     }
   }
 
@@ -1206,16 +1233,31 @@
     renderLog();
 
     try {
+      // Apps Script web apps redirect (302) to a different URL.
+      // We first send a no-cors POST to handle the redirect, but that strips the body.
+      // Instead, we use the Google Apps Script exec URL with redirect=follow and cors mode.
       const response = await fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
+        redirect: 'follow',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
 
-      // With no-cors we can't read the body, but a non-throw means the request went through
+      let result = null;
+      try {
+        result = await response.json();
+      } catch(parseErr) {
+        // If we can't parse JSON, check HTTP status
+      }
+
+      if (result && result.success === false) {
+        throw new Error(result.error || 'Server returned an error');
+      }
+
       logEntry.status = 'sent';
-      logEntry.statusMessage = 'Inserted into Water Release sheet';
+      logEntry.statusMessage = result && result.id
+        ? 'Inserted as ' + result.id + ' into Water Release sheet'
+        : 'Inserted into Water Release sheet';
       logEntry.insertedAt = new Date();
       renderLog();
 
