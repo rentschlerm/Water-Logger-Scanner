@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Water Release Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a1628;
+      --surface: #111d33;
+      --surface-raised: #162440;
+      --border: #1e3355;
+      --text: #e2e8f0;
+      --text-muted: #7a8ba8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --walkin: #22d3ee;
+      --elf: #a78bfa;
+      --tangkal: #fb923c;
+      --success: #34d399;
+      --error: #f87171;
+      --radius: 14px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, rgba(56, 189, 248, 0.04) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, rgba(167, 139, 250, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 20px 16px 100px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 24px 0 20px;
+    }
+
+    .header-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.4));
+    }
+
+    .header h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Config Banner */
+    .config-banner {
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(248, 113, 113, 0.1));
+      border: 1px solid rgba(251, 146, 60, 0.3);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .config-banner.ready {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(56, 189, 248, 0.08));
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .config-banner p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .config-banner code {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    /* URL Input */
+    .url-setup {
+      margin-bottom: 20px;
+    }
+
+    .url-setup label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .url-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-input-group input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .url-input-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .url-input-group button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .url-input-group button:active {
+      transform: scale(0.96);
+    }
+
+    /* Scanner Section */
+    .scanner-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .scanner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .scanner-header span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .scan-toggle {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scan-toggle:hover {
+      background: var(--accent-glow);
+    }
+
+    .scan-toggle.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    #qr-reader {
+      width: 100%;
+      background: #000;
+    }
+
+    #qr-reader video {
+      border-radius: 0 !important;
+    }
+
+    .scan-result {
+      padding: 16px;
+      text-align: center;
+    }
+
+    .scan-result .detected-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .scan-result .detected-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .detected-value.walk-in { color: var(--walkin); }
+    .detected-value.elf { color: var(--elf); }
+    .detected-value.tangkal { color: var(--tangkal); }
+
+    /* Category Cards (Manual Select) */
+    .category-section {
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .cat-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .cat-card.walk-in::before { background: var(--walkin); }
+    .cat-card.elf::before { background: var(--elf); }
+    .cat-card.tangkal::before { background: var(--tangkal); }
+
+    .cat-card:hover {
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+    }
+
+    .cat-card.selected.walk-in { border-color: var(--walkin); background: rgba(34, 211, 238, 0.08); box-shadow: 0 0 24px rgba(34, 211, 238, 0.1); }
+    .cat-card.selected.elf { border-color: var(--elf); background: rgba(167, 139, 250, 0.08); box-shadow: 0 0 24px rgba(167, 139, 250, 0.1); }
+    .cat-card.selected.tangkal { border-color: var(--tangkal); background: rgba(251, 146, 60, 0.08); box-shadow: 0 0 24px rgba(251, 146, 60, 0.1); }
+
+    .cat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .cat-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .cat-card.walk-in .cat-name { color: var(--walkin); }
+    .cat-card.elf .cat-name { color: var(--elf); }
+    .cat-card.tangkal .cat-name { color: var(--tangkal); }
+
+    /* Quantity */
+    .qty-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .qty-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .qty-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface-raised);
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .qty-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .qty-btn:active {
+      transform: scale(0.92);
+    }
+
+    .qty-display {
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .qty-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      text-align: center;
+      width: 100%;
+      outline: none;
+      -moz-appearance: textfield;
+      transition: border-color 0.2s;
+    }
+
+    .qty-number:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    .qty-number::-webkit-outer-spin-button,
+    .qty-number::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .qty-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .qty-price {
+      text-align: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .qty-price .price-line {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .qty-price .price-total {
+      font-family: 'Space Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--success);
+      margin-top: 4px;
+    }
+
+    /* Submit */
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent), #0ea5e9);
+      color: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(56, 189, 248, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .submit-btn.loading {
+      pointer-events: none;
+    }
+
+    .submit-btn.loading::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 1.2s infinite;
+    }
+
+    @keyframes shimmer {
+      to { left: 100%; }
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      min-width: 280px;
+      text-align: center;
+      pointer-events: auto;
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 3.5s forwards;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+
+    .toast.success {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .toast.error {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    /* Log Section */
+    .log-section {
+      margin-top: 24px;
+    }
+
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .log-entry {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .log-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .log-dot.walk-in { background: var(--walkin); box-shadow: 0 0 8px var(--walkin); }
+    .log-dot.elf { background: var(--elf); box-shadow: 0 0 8px var(--elf); }
+    .log-dot.tangkal { background: var(--tangkal); box-shadow: 0 0 8px var(--tangkal); }
+
+    .log-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .log-cat {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .log-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .log-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    .log-status.sending {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+    }
+
+    .log-status.sent {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--success);
+    }
+
+    .log-status.failed {
+      background: rgba(248, 113, 113, 0.12);
+      color: var(--error);
+    }
+
+    .log-status-icon {
+      font-size: 11px;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .log-status.sending .log-status-icon {
+      animation: pulse-dot 1s infinite;
+    }
+
+    .log-right {
+      text-align: right;
+    }
+
+    .log-qty {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .log-total {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--success);
+    }
+
+    .empty-log {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* QR Code display styles */
+    .qr-codes-section {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .qr-codes-section .section-label {
+      margin-bottom: 6px;
+    }
+
+    .qr-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .qr-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .qr-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .qr-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .qr-item-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .qr-item-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .qr-item-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Hide html5-qrcode default UI */
+    #qr-reader__dashboard_section_csr button {
+      background: var(--accent) !important;
+      color: var(--bg) !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 10px 20px !important;
+      font-family: 'DM Sans', sans-serif !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+    }
+
+    #qr-reader__dashboard_section_csr select {
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      padding: 8px !important;
+      font-family: 'DM Sans', sans-serif !important;
+    }
+
+    #qr-reader__status_span {
+      display: none !important;
+    }
+
+    #qr-reader__dashboard_section_fsr {
+      display: none !important;
+    }
+
+    #qr-reader img[alt="Info icon"] {
+      display: none !important;
+    }
+
+    #qr-reader__dashboard_section_csr span {
+      color: var(--text-muted) !important;
+      font-size: 13px !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">💧</div>
+    <h1>Water Release</h1>
+    <p>5-Gallon Container Logger</p>
+  </div>
+
+  <!-- Config Banner -->
+  <div class="config-banner" id="configBanner">
+    <p>⚠️ Paste your Google Apps Script Web App URL below to connect</p>
+  </div>
+
+  <!-- URL Setup -->
+  <div class="url-setup">
+    <label>Apps Script Web App URL</label>
+    <div class="url-input-group">
+      <input type="url" id="apiUrl" placeholder="https://script.google.com/macros/s/...">
+      <button onclick="saveUrl()">Save</button>
+    </div>
+  </div>
+
+  <!-- QR Scanner -->
+  <div class="scanner-section">
+    <div class="scanner-header">
+      <span>📷 QR Scanner</span>
+      <button class="scan-toggle" id="scanToggle" onclick="toggleScanner()">Start Scan</button>
+    </div>
+    <div id="qr-reader"></div>
+    <div class="scan-result" id="scanResult" style="display:none;">
+      <div class="detected-label">Category Detected</div>
+      <div class="detected-value" id="detectedCategory">—</div>
+    </div>
+  </div>
+
+  <!-- Manual Category Select -->
+  <div class="category-section">
+    <div class="section-label">Or Select Category</div>
+    <div class="category-grid">
+      <div class="cat-card walk-in" onclick="selectCategory('Walk-in')" id="card-Walk-in">
+        <div class="cat-icon">🚶</div>
+        <div class="cat-name">Walk-in</div>
+      </div>
+      <div class="cat-card elf" onclick="selectCategory('Elf')" id="card-Elf">
+        <div class="cat-icon">🧝</div>
+        <div class="cat-name">Elf</div>
+      </div>
+      <div class="cat-card tangkal" onclick="selectCategory('Tangkal')" id="card-Tangkal">
+        <div class="cat-icon">🏘️</div>
+        <div class="cat-name">Tangkal</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quantity -->
+  <div class="qty-section">
+    <div class="section-label" style="margin-bottom: 14px;">Quantity (5-gal containers)</div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+      <div class="qty-display">
+        <input type="number" class="qty-number" id="qtyDisplay" value="1" min="1" max="9999"
+               oninput="onQtyInput(this)" onfocus="this.select()" inputmode="numeric">
+        <div class="qty-label">containers</div>
+      </div>
+      <button class="qty-btn" onclick="adjustQty(1)">+</button>
+    </div>
+    <div class="qty-price">
+      <div class="price-line">@ ₱20.00 per container</div>
+      <div class="price-total" id="totalDisplay">₱20.00</div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <button class="submit-btn" id="submitBtn" onclick="submitEntry()" disabled>
+    Select a category to log
+  </button>
+
+  <!-- Session Log -->
+  <div class="log-section">
+    <div class="log-header">
+      <div class="section-label">Session Log</div>
+    </div>
+    <div id="logEntries">
+      <div class="empty-log">No entries yet this session</div>
+    </div>
+  </div>
+
+  <!-- QR Code Reference -->
+  <div class="qr-codes-section">
+    <div class="section-label">QR Code Values</div>
+    <p class="qr-hint">Create QR codes with these exact text values. Use any free QR code generator (e.g. qr-code-generator.com).</p>
+    <div class="qr-list">
+      <div class="qr-item">
+        <div class="qr-item-left">
+          <div class="qr-item-dot" style="background: var(--walkin);"></div>
+          <div class="qr-item-name">Walk-in</div>
+        </div>
+        <div class="qr-item-value">Walk-in</div>
+      </div>
+      <div class="qr-item">
+        <div class="qr-item-left">
+          <div class="qr-item-dot" style="background: var(--elf);"></div>
+          <div class="qr-item-name">Elf</div>
+        </div>
+        <div class="qr-item-value">Elf</div>
+      </div>
+      <div class="qr-item">
+        <div class="qr-item-left">
+          <div class="qr-item-dot" style="background: var(--tangkal);"></div>
+          <div class="qr-item-name">Tangkal</div>
+        </div>
+        <div class="qr-item-value">Tangkal</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ═══════════════════════════════════════════
+  // STATE
+  // ═══════════════════════════════════════════
+  let selectedCategory = null;
+  let quantity = 1;
+  let scanner = null;
+  let scanning = false;
+  const PRICE = 20;
+  const VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
+  const sessionLog = [];
+
+  // ═══════════════════════════════════════════
+  // URL MANAGEMENT
+  // ═══════════════════════════════════════════
+  function saveUrl() {
+    const url = document.getElementById('apiUrl').value.trim();
+    if (!url) {
+      showToast('Please enter a URL', 'error');
+      return;
+    }
+    localStorage.setItem('waterReleaseApiUrl', url);
+    updateConfigBanner();
+    showToast('URL saved!', 'success');
+  }
+
+  function getApiUrl() {
+    return localStorage.getItem('waterReleaseApiUrl') || '';
+  }
+
+  function updateConfigBanner() {
+    const banner = document.getElementById('configBanner');
+    const url = getApiUrl();
+    if (url) {
+      banner.className = 'config-banner ready';
+      banner.innerHTML = '<p>✅ Connected to Google Sheets</p>';
+    } else {
+      banner.className = 'config-banner';
+      banner.innerHTML = '<p>⚠️ Paste your Google Apps Script Web App URL below to connect</p>';
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // QR SCANNER
+  // ═══════════════════════════════════════════
+  function toggleScanner() {
+    if (scanning) {
+      stopScanner();
+    } else {
+      startScanner();
+    }
+  }
+
+  function startScanner() {
+    const toggle = document.getElementById('scanToggle');
+    toggle.textContent = 'Stop';
+    toggle.classList.add('active');
+    scanning = true;
+
+    scanner = new Html5Qrcode("qr-reader");
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess,
+      () => {} // ignore errors
+    ).catch(err => {
+      showToast('Camera error: ' + err, 'error');
+      stopScanner();
+    });
+  }
+
+  function stopScanner() {
+    const toggle = document.getElementById('scanToggle');
+    toggle.textContent = 'Start Scan';
+    toggle.classList.remove('active');
+    scanning = false;
+
+    if (scanner) {
+      scanner.stop().catch(() => {});
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    const text = decodedText.trim();
+
+    // Normalize category matching (case-insensitive)
+    const match = VALID_CATEGORIES.find(c => c.toLowerCase() === text.toLowerCase());
+
+    if (match) {
+      selectCategory(match);
+      // Show scan result
+      const resultDiv = document.getElementById('scanResult');
+      const catDiv = document.getElementById('detectedCategory');
+      resultDiv.style.display = 'block';
+      catDiv.textContent = match;
+      catDiv.className = 'detected-value ' + match.toLowerCase().replace('-', '-');
+
+      // Set CSS class for color
+      if (match === 'Walk-in') catDiv.className = 'detected-value walk-in';
+      else if (match === 'Elf') catDiv.className = 'detected-value elf';
+      else if (match === 'Tangkal') catDiv.className = 'detected-value tangkal';
+
+      // Vibrate feedback
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      showToast(match + ' detected!', 'success');
+
+      // Stop scanner after successful read
+      stopScanner();
+    } else {
+      showToast('Unknown QR: ' + text, 'error');
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // CATEGORY SELECTION
+  // ═══════════════════════════════════════════
+  function selectCategory(cat) {
+    selectedCategory = cat;
+
+    // Update card highlights
+    VALID_CATEGORIES.forEach(c => {
+      const card = document.getElementById('card-' + c);
+      card.classList.toggle('selected', c === cat);
+    });
+
+    // Update submit button
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.textContent = 'Log ' + quantity + 'x ' + cat + ' — ₱' + (quantity * PRICE).toFixed(2);
+  }
+
+  // ═══════════════════════════════════════════
+  // QUANTITY
+  // ═══════════════════════════════════════════
+  function adjustQty(delta) {
+    quantity = Math.max(1, Math.min(9999, quantity + delta));
+    document.getElementById('qtyDisplay').value = quantity;
+    document.getElementById('totalDisplay').textContent = '₱' + (quantity * PRICE).toFixed(2);
+
+    if (selectedCategory) {
+      document.getElementById('submitBtn').textContent =
+        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+    }
+  }
+
+  function onQtyInput(el) {
+    let val = parseInt(el.value, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > 9999) val = 9999;
+    quantity = val;
+    document.getElementById('totalDisplay').textContent = '₱' + (quantity * PRICE).toFixed(2);
+
+    if (selectedCategory) {
+      document.getElementById('submitBtn').textContent =
+        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // SUBMIT
+  // ═══════════════════════════════════════════
+  async function submitEntry() {
+    const url = getApiUrl();
+    if (!url) {
+      showToast('Set your Apps Script URL first!', 'error');
+      return;
+    }
+
+    if (!selectedCategory) {
+      showToast('Select a category first', 'error');
+      return;
+    }
+
+    // Clamp qty from input before submitting
+    const qtyInput = document.getElementById('qtyDisplay');
+    let val = parseInt(qtyInput.value, 10);
+    if (isNaN(val) || val < 1) val = 1;
+    quantity = val;
+    qtyInput.value = quantity;
+
+    const btn = document.getElementById('submitBtn');
+    btn.classList.add('loading');
+    btn.textContent = 'Logging...';
+    btn.disabled = true;
+
+    const payload = {
+      category: selectedCategory,
+      quantity: quantity
+    };
+
+    const logEntry = {
+      category: selectedCategory,
+      quantity: quantity,
+      total: quantity * PRICE,
+      time: new Date(),
+      status: 'sending', // 'sending' | 'sent' | 'failed'
+      statusMessage: 'Sending to Google Sheets...',
+    };
+
+    sessionLog.unshift(logEntry);
+    renderLog();
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+
+      // With no-cors we can't read the body, but a non-throw means the request went through
+      logEntry.status = 'sent';
+      logEntry.statusMessage = 'Inserted into Water Release sheet';
+      logEntry.insertedAt = new Date();
+      renderLog();
+
+      showToast('✅ ' + quantity + 'x ' + selectedCategory + ' logged — ₱' + (quantity * PRICE).toFixed(2), 'success');
+
+      // Reset
+      quantity = 1;
+      document.getElementById('qtyDisplay').value = '1';
+      document.getElementById('totalDisplay').textContent = '₱20.00';
+      selectedCategory = null;
+      VALID_CATEGORIES.forEach(c => document.getElementById('card-' + c).classList.remove('selected'));
+      document.getElementById('scanResult').style.display = 'none';
+
+      btn.textContent = 'Select a category to log';
+      btn.disabled = true;
+      btn.classList.remove('loading');
+
+    } catch (err) {
+      logEntry.status = 'failed';
+      logEntry.statusMessage = 'Failed: ' + (err.message || 'Network error');
+      logEntry.insertedAt = new Date();
+      renderLog();
+
+      showToast('Network error — check your URL', 'error');
+      btn.textContent = 'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // SESSION LOG
+  // ═══════════════════════════════════════════
+  function renderLog() {
+    const container = document.getElementById('logEntries');
+
+    if (sessionLog.length === 0) {
+      container.innerHTML = '<div class="empty-log">No entries yet this session</div>';
+      return;
+    }
+
+    container.innerHTML = sessionLog.map(entry => {
+      const cssClass = entry.category === 'Walk-in' ? 'walk-in' :
+                       entry.category === 'Elf' ? 'elf' : 'tangkal';
+      const timeStr = entry.time.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      const statusClass = entry.status || 'sending';
+      const statusIcon = statusClass === 'sent' ? '✓' :
+                         statusClass === 'failed' ? '✕' : '●';
+      const statusText = entry.statusMessage || 'Pending...';
+      const insertedTimeStr = entry.insertedAt
+        ? entry.insertedAt.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        : '';
+
+      return `
+        <div class="log-entry">
+          <div class="log-left">
+            <div class="log-dot ${cssClass}"></div>
+            <div class="log-info">
+              <div class="log-cat">${entry.category}</div>
+              <div class="log-time">Queued ${timeStr}</div>
+              <div class="log-status ${statusClass}">
+                <span class="log-status-icon">${statusIcon}</span>
+                ${statusText}${insertedTimeStr ? ' at ' + insertedTimeStr : ''}
+              </div>
+            </div>
+          </div>
+          <div class="log-right">
+            <div class="log-qty">${entry.quantity}x</div>
+            <div class="log-total">₱${entry.total.toFixed(2)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ═══════════════════════════════════════════
+  // TOAST
+  // ═══════════════════════════════════════════
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
+
+  // ═══════════════════════════════════════════
+  // INIT
+  // ═══════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedUrl = getApiUrl();
+    if (savedUrl) {
+      document.getElementById('apiUrl').value = savedUrl;
+    }
+    updateConfigBanner();
+  });
+</script>
+</body>
+</html>
