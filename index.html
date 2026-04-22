@@ -417,6 +417,85 @@
       margin-top: 4px;
     }
 
+    /* Price Chips */
+    .price-chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .price-chip {
+      flex: 1;
+      padding: 12px 6px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface-raised);
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .price-chip:hover {
+      border-color: var(--text-muted);
+    }
+
+    .price-chip.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+    }
+
+    .price-chip.custom-chip {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+    }
+
+    .custom-price-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 14px;
+      justify-content: center;
+    }
+
+    .custom-peso {
+      font-family: 'Space Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .custom-price-input {
+      font-family: 'Space Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      background: none;
+      border: none;
+      border-bottom: 2px solid var(--accent);
+      text-align: center;
+      width: 100px;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    .custom-price-input::-webkit-outer-spin-button,
+    .custom-price-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .qty-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0 18px;
+    }
+
     /* Submit */
     .submit-btn {
       width: 100%;
@@ -799,6 +878,20 @@
 
   <!-- Quantity -->
   <div class="qty-section">
+    <div class="section-label" style="margin-bottom: 14px;">Price per Container</div>
+    <div class="price-chips" id="priceChips">
+      <button class="price-chip selected" onclick="selectPrice(20)">₱20</button>
+      <button class="price-chip" onclick="selectPrice(25)">₱25</button>
+      <button class="price-chip" onclick="selectPrice(30)">₱30</button>
+      <button class="price-chip custom-chip" onclick="showCustomPrice()">Custom</button>
+    </div>
+    <div class="custom-price-row" id="customPriceRow" style="display:none;">
+      <span class="custom-peso">₱</span>
+      <input type="number" class="custom-price-input" id="customPriceInput" min="1" max="9999"
+             placeholder="0" inputmode="numeric" oninput="onCustomPriceInput(this)" onfocus="this.select()">
+    </div>
+
+    <div class="qty-divider"></div>
     <div class="section-label" style="margin-bottom: 14px;">Quantity (5-gal containers)</div>
     <div class="qty-row">
       <button class="qty-btn" onclick="adjustQty(-1)">−</button>
@@ -810,7 +903,7 @@
       <button class="qty-btn" onclick="adjustQty(1)">+</button>
     </div>
     <div class="qty-price">
-      <div class="price-line">@ ₱20.00 per container</div>
+      <div class="price-line" id="priceLineDisplay">@ ₱20.00 per container</div>
       <div class="price-total" id="totalDisplay">₱20.00</div>
     </div>
   </div>
@@ -871,7 +964,7 @@
   let quantity = 1;
   let scanner = null;
   let scanning = false;
-  const PRICE = 20;
+  let price = 20;
   const VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
   const sessionLog = [];
 
@@ -992,7 +1085,51 @@
     // Update submit button
     const btn = document.getElementById('submitBtn');
     btn.disabled = false;
-    btn.textContent = 'Log ' + quantity + 'x ' + cat + ' — ₱' + (quantity * PRICE).toFixed(2);
+    btn.textContent = 'Log ' + quantity + 'x ' + cat + ' — ₱' + (quantity * price).toFixed(2);
+  }
+
+  // ═══════════════════════════════════════════
+  // PRICE SELECTION
+  // ═══════════════════════════════════════════
+  function selectPrice(p) {
+    price = p;
+    document.getElementById('customPriceRow').style.display = 'none';
+
+    // Highlight selected chip
+    document.querySelectorAll('.price-chip').forEach(chip => chip.classList.remove('selected'));
+    const chips = document.querySelectorAll('.price-chip:not(.custom-chip)');
+    chips.forEach(chip => {
+      if (chip.textContent.trim() === '₱' + p) chip.classList.add('selected');
+    });
+
+    updatePriceDisplays();
+  }
+
+  function showCustomPrice() {
+    document.querySelectorAll('.price-chip').forEach(chip => chip.classList.remove('selected'));
+    document.querySelector('.custom-chip').classList.add('selected');
+    const row = document.getElementById('customPriceRow');
+    row.style.display = 'flex';
+    const input = document.getElementById('customPriceInput');
+    input.value = price;
+    input.focus();
+    input.select();
+  }
+
+  function onCustomPriceInput(el) {
+    let val = parseFloat(el.value);
+    if (isNaN(val) || val < 0) val = 0;
+    price = val;
+    updatePriceDisplays();
+  }
+
+  function updatePriceDisplays() {
+    document.getElementById('priceLineDisplay').textContent = '@ ₱' + price.toFixed(2) + ' per container';
+    document.getElementById('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
+    if (selectedCategory) {
+      document.getElementById('submitBtn').textContent =
+        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
+    }
   }
 
   // ═══════════════════════════════════════════
@@ -1001,11 +1138,11 @@
   function adjustQty(delta) {
     quantity = Math.max(1, Math.min(9999, quantity + delta));
     document.getElementById('qtyDisplay').value = quantity;
-    document.getElementById('totalDisplay').textContent = '₱' + (quantity * PRICE).toFixed(2);
+    document.getElementById('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
 
     if (selectedCategory) {
       document.getElementById('submitBtn').textContent =
-        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
     }
   }
 
@@ -1014,11 +1151,11 @@
     if (isNaN(val) || val < 1) val = 1;
     if (val > 9999) val = 9999;
     quantity = val;
-    document.getElementById('totalDisplay').textContent = '₱' + (quantity * PRICE).toFixed(2);
+    document.getElementById('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
 
     if (selectedCategory) {
       document.getElementById('submitBtn').textContent =
-        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+        'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
     }
   }
 
@@ -1051,13 +1188,15 @@
 
     const payload = {
       category: selectedCategory,
-      quantity: quantity
+      quantity: quantity,
+      price: price
     };
 
     const logEntry = {
       category: selectedCategory,
       quantity: quantity,
-      total: quantity * PRICE,
+      price: price,
+      total: quantity * price,
       time: new Date(),
       status: 'sending', // 'sending' | 'sent' | 'failed'
       statusMessage: 'Sending to Google Sheets...',
@@ -1080,12 +1219,12 @@
       logEntry.insertedAt = new Date();
       renderLog();
 
-      showToast('✅ ' + quantity + 'x ' + selectedCategory + ' logged — ₱' + (quantity * PRICE).toFixed(2), 'success');
+      showToast('✅ ' + quantity + 'x ' + selectedCategory + ' logged — ₱' + (quantity * price).toFixed(2), 'success');
 
       // Reset
       quantity = 1;
       document.getElementById('qtyDisplay').value = '1';
-      document.getElementById('totalDisplay').textContent = '₱20.00';
+      document.getElementById('totalDisplay').textContent = '₱' + price.toFixed(2);
       selectedCategory = null;
       VALID_CATEGORIES.forEach(c => document.getElementById('card-' + c).classList.remove('selected'));
       document.getElementById('scanResult').style.display = 'none';
@@ -1101,7 +1240,7 @@
       renderLog();
 
       showToast('Network error — check your URL', 'error');
-      btn.textContent = 'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * PRICE).toFixed(2);
+      btn.textContent = 'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
       btn.disabled = false;
       btn.classList.remove('loading');
     }
@@ -1145,7 +1284,7 @@
             </div>
           </div>
           <div class="log-right">
-            <div class="log-qty">${entry.quantity}x</div>
+            <div class="log-qty">${entry.quantity}x @ ₱${entry.price.toFixed(0)}</div>
             <div class="log-total">₱${entry.total.toFixed(2)}</div>
           </div>
         </div>
