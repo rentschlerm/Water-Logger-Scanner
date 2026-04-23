@@ -31,6 +31,19 @@
     h1 { font-size: 22px; color: var(--accent); margin-top: 8px; }
     .subtitle { font-size: 13px; color: var(--muted); }
 
+    /* Mode Toggle */
+    .mode-buttons { display: flex; gap: 10px; width: 100%; max-width: 460px; }
+    .mode-btn {
+      flex: 1; padding: 14px; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      opacity: 0.4; transition: all 0.2s;
+    }
+    .mode-btn.active { opacity: 1; transform: scale(1.03); }
+    .mode-btn.release { background: var(--success); color: var(--bg); }
+    .mode-btn.returned { background: var(--error); color: #fff; }
+    .mode-label { font-size: 12px; color: var(--muted); }
+    .mode-label span { font-weight: 700; font-size: 14px; color: #fff; }
+
     /* Setup Banner */
     .setup-banner {
       width: 100%; max-width: 460px; padding: 14px;
@@ -213,6 +226,13 @@
 <h1>💧 Water Release</h1>
 <p class="subtitle">5-Gallon Container Logger</p>
 
+<!-- Mode Toggle -->
+<div class="mode-buttons">
+  <button class="mode-btn release active" id="btnRelease" onclick="setMode('release')">📤 RELEASE</button>
+  <button class="mode-btn returned" id="btnReturned" onclick="setMode('returned')">📥 RETURNED</button>
+</div>
+<p class="mode-label">Mode: <span id="modeLabel">RELEASE</span></p>
+
 <!-- QR Scanner -->
 <div class="card">
   <div class="section-label">📷 QR Scanner</div>
@@ -324,11 +344,23 @@
   let selectedCategory = null;
   let quantity = 1;
   let price = 20;
+  let currentMode = 'release'; // 'release' or 'returned'
   let html5Scanner = null;
   let isProcessing = false;
   let scanCooldown = false;
   const VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
   const sessionLog = [];
+
+  // ═══════════════════════════════════════════
+  // MODE TOGGLE
+  // ═══════════════════════════════════════════
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('modeLabel').textContent = mode === 'release' ? 'RELEASE' : 'RETURNED';
+    document.getElementById('btnRelease').classList.toggle('active', mode === 'release');
+    document.getElementById('btnReturned').classList.toggle('active', mode === 'returned');
+    updateSubmitBtn();
+  }
 
   // ═══════════════════════════════════════════
   // QR SCANNER (html5-qrcode, same as payroll)
@@ -460,12 +492,19 @@
 
   function updateSubmitBtn() {
     const btn = document.getElementById('submitBtn');
+    const verb = currentMode === 'returned' ? 'Return' : 'Log';
     if (selectedCategory) {
       btn.disabled = false;
-      btn.textContent = 'Log ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
+      btn.textContent = verb + ' ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
+      if (currentMode === 'returned') {
+        btn.style.background = 'linear-gradient(135deg, #f87171, #dc2626)';
+      } else {
+        btn.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
+      }
     } else {
       btn.disabled = true;
-      btn.textContent = 'Select a category to log';
+      btn.textContent = 'Select a category to ' + verb.toLowerCase();
+      btn.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
     }
   }
 
@@ -492,12 +531,13 @@
     isProcessing = true;
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    showSpinner(true, 'Logging ' + quantity + 'x ' + selectedCategory + '...');
+    const verb = currentMode === 'returned' ? 'Returning' : 'Logging';
+    showSpinner(true, verb + ' ' + quantity + 'x ' + selectedCategory + '...');
     clearResult();
 
     const logEntry = {
       category: selectedCategory, quantity: quantity, price: price,
-      total: quantity * price, time: new Date(),
+      total: quantity * price, time: new Date(), action: currentMode,
       status: 'sending', statusMessage: 'Sending...',
     };
     sessionLog.unshift(logEntry);
@@ -509,6 +549,7 @@
       '?category=' + encodeURIComponent(selectedCategory) +
       '&quantity=' + encodeURIComponent(quantity) +
       '&price=' + encodeURIComponent(price) +
+      '&action=' + encodeURIComponent(currentMode) +
       '&callback=' + callbackName;
 
     window[callbackName] = function(data) {
@@ -599,18 +640,23 @@
       const timeStr = entry.time.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
       const statusIcon = entry.status === 'sent' ? '✓' : entry.status === 'failed' ? '✕' : '●';
       const insertedStr = entry.insertedAt ? ' at ' + entry.insertedAt.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) : '';
+      const actionBadge = entry.action === 'returned'
+        ? '<span style="color:#f87171;font-size:10px;font-weight:700;">📥 RETURNED</span>'
+        : '<span style="color:#34d399;font-size:10px;font-weight:700;">📤 RELEASED</span>';
       return `<div class="log-entry">
         <div class="log-left">
           <div class="log-dot ${cssClass}"></div>
           <div>
-            <div class="log-cat">${entry.category}</div>
+            <div class="log-cat">${entry.category} ${actionBadge}</div>
             <div class="log-time">Queued ${timeStr}</div>
             <div class="log-status ${entry.status}">${statusIcon} ${entry.statusMessage}${insertedStr}</div>
           </div>
         </div>
         <div class="log-right">
           <div class="log-qty">${entry.quantity}x @ ₱${entry.price.toFixed(0)}</div>
-          <div class="log-total">₱${entry.total.toFixed(2)}</div>
+          <div class="log-total" style="color:${entry.action === 'returned' ? '#f87171' : '#34d399'}">
+            ${entry.action === 'returned' ? '-' : ''}₱${entry.total.toFixed(2)}
+          </div>
         </div>
       </div>`;
     }).join('');
