@@ -211,6 +211,33 @@
     .qr-ref-left { display: flex; align-items: center; gap: 8px; }
     .qr-ref-dot { width: 7px; height: 7px; border-radius: 50%; }
     .qr-ref-val { font-size: 12px; color: var(--muted); }
+
+    /* Dev Panel — hidden by default */
+    .dev-panel {
+      display: none; width: 100%; max-width: 460px; padding: 16px;
+      background: #1a1a2e; border: 2px solid #e67e22; border-radius: 14px;
+      text-align: center;
+    }
+    .dev-header {
+      font-size: 14px; font-weight: 700; color: #e67e22; margin-bottom: 10px;
+    }
+    .dev-panel label {
+      font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+      display: block; text-align: left; margin-bottom: 4px;
+    }
+    .dev-panel input {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e67e22;
+      background: var(--bg); color: #fff; font-size: 11px; margin-bottom: 10px;
+    }
+    .dev-btns { display: flex; gap: 8px; margin-bottom: 10px; }
+    .dev-btns button {
+      flex: 1; padding: 10px; border: none; border-radius: 8px;
+      font-weight: 700; font-size: 13px; cursor: pointer;
+      background: #27ae60; color: #fff;
+    }
+    .dev-current {
+      font-size: 10px; color: #666; word-break: break-all; margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -223,8 +250,21 @@
   <button onclick="saveWebAppUrl()">💾 Save URL</button>
 </div>
 
-<h1>💧 Water Release</h1>
+<h1 id="appTitle" onclick="devTap()">💧 Water Release</h1>
 <p class="subtitle">5-Gallon Container Logger</p>
+
+<!-- Hidden Dev Panel — revealed by tapping title 5x -->
+<div class="dev-panel" id="devPanel">
+  <div class="dev-header">🔧 Developer Settings</div>
+  <label>Web App URL</label>
+  <input type="text" id="devUrl" placeholder="https://script.google.com/macros/s/.../exec">
+  <div class="dev-btns">
+    <button onclick="devSaveUrl()">💾 Save</button>
+    <button onclick="devClearUrl()" style="background:#e74c3c;">🗑️ Clear</button>
+    <button onclick="devClose()" style="background:#555;">✕ Close</button>
+  </div>
+  <p class="dev-current" id="devCurrent">No URL set</p>
+</div>
 
 <!-- Mode Toggle -->
 <div class="mode-buttons">
@@ -336,6 +376,56 @@
     WEB_APP_URL = url;
     document.getElementById('setupBanner').style.display = 'none';
     alert('✅ URL saved! Ready to log.');
+  }
+
+  // ═══════════════════════════════════════════
+  // DEV PANEL — tap title 5x to reveal
+  // ═══════════════════════════════════════════
+  let devTapCount = 0;
+  let devTapTimer = null;
+
+  function devTap() {
+    devTapCount++;
+    clearTimeout(devTapTimer);
+    devTapTimer = setTimeout(() => { devTapCount = 0; }, 1500);
+
+    if (devTapCount >= 5) {
+      devTapCount = 0;
+      const panel = document.getElementById('devPanel');
+      panel.style.display = 'block';
+      document.getElementById('devUrl').value = WEB_APP_URL || '';
+      document.getElementById('devCurrent').textContent = WEB_APP_URL
+        ? 'Current: ' + WEB_APP_URL
+        : 'No URL set';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function devSaveUrl() {
+    const url = document.getElementById('devUrl').value.trim();
+    if (!url || !url.startsWith('https://script.google.com/')) {
+      alert('Enter a valid Google Apps Script Web App URL');
+      return;
+    }
+    localStorage.setItem('WATER_RELEASE_URL', url);
+    WEB_APP_URL = url;
+    document.getElementById('devCurrent').textContent = 'Current: ' + url;
+    document.getElementById('setupBanner').style.display = 'none';
+    alert('✅ URL updated!');
+  }
+
+  function devClearUrl() {
+    if (!confirm('Clear the saved URL? You will need to set it again.')) return;
+    localStorage.removeItem('WATER_RELEASE_URL');
+    WEB_APP_URL = '';
+    document.getElementById('devCurrent').textContent = 'No URL set';
+    document.getElementById('devUrl').value = '';
+    document.getElementById('setupBanner').style.display = 'block';
+    alert('🗑️ URL cleared.');
+  }
+
+  function devClose() {
+    document.getElementById('devPanel').style.display = 'none';
   }
 
   // ═══════════════════════════════════════════
