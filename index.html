@@ -10,6 +10,7 @@
       --bg: #0a1628; --card: #111d33; --bdr: #1e3355; --raised: #162440;
       --text: #e2e8f0; --muted: #7a8ba8; --accent: #38bdf8;
       --walkin: #22d3ee; --elf: #a78bfa; --tangkal: #fb923c;
+      --brgy: #f472b6;
       --success: #34d399; --error: #f87171;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,6 +86,31 @@
     .cat-card.walk-in .cat-name { color: var(--walkin); }
     .cat-card.elf .cat-name { color: var(--elf); }
     .cat-card.tangkal .cat-name { color: var(--tangkal); }
+
+    /* ── Barangay picker ─────────────────────────────── */
+    .brgy-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .brgy-head .section-label { margin-bottom: 0; }
+    .brgy-sticky {
+      font-size: 10px; color: var(--muted); display: flex;
+      align-items: center; gap: 5px; cursor: pointer; user-select: none;
+    }
+    .brgy-sticky input { accent-color: var(--brgy); width: 14px; height: 14px; }
+    .brgy-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .brgy-chip {
+      padding: 10px 13px; border: 2px solid var(--bdr); border-radius: 10px;
+      background: var(--raised); color: var(--muted); font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: all 0.15s; line-height: 1.1;
+    }
+    .brgy-chip:active { transform: scale(0.95); }
+    .brgy-chip.selected {
+      border-color: var(--brgy); background: rgba(244,114,182,0.1); color: var(--brgy);
+    }
+    .brgy-chip.unspec { font-style: italic; opacity: 0.75; }
+    .brgy-chip.other { border-style: dashed; }
+    .brgy-note { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
+    .brgy-note.warn { color: #e67e22; }
+    .brgy-loading { font-size: 12px; color: var(--muted); padding: 6px 0; }
+
     .price-chips { display: flex; gap: 8px; margin-bottom: 12px; }
     .price-chip {
       flex: 1; padding: 11px 4px; border: 2px solid var(--bdr); border-radius: 10px;
@@ -124,6 +150,7 @@
       width: 100%; max-width: 460px; padding: 16px; border: none; border-radius: 14px;
       background: linear-gradient(135deg, var(--accent), #0ea5e9); color: var(--bg);
       font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+      line-height: 1.35;
     }
     .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .spinner-wrap { display: none; text-align: center; color: var(--accent); font-size: 14px; width: 100%; max-width: 460px; }
@@ -166,6 +193,21 @@
     }
     .live-stat-val { font-size: 18px; font-weight: 700; }
     .live-stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+
+    /* Today by barangay */
+    .brgy-breakdown { margin-bottom: 12px; }
+    .brgy-bd-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muted); margin-bottom: 6px; text-align: center;
+    }
+    .brgy-bd-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .brgy-bd-item {
+      background: var(--card); border: 1px solid var(--bdr); border-left: 3px solid var(--brgy);
+      border-radius: 8px; padding: 6px 10px; font-size: 11px;
+    }
+    .brgy-bd-name { font-weight: 700; color: var(--brgy); }
+    .brgy-bd-val { color: var(--muted); margin-left: 5px; }
+
     .live-entry {
       background: var(--card); border: 1px solid var(--bdr); border-radius: 10px;
       padding: 10px 14px; margin-bottom: 5px; display: flex;
@@ -180,6 +222,7 @@
     .live-dot.tangkal { background: var(--tangkal); }
     .live-id { font-size: 10px; color: var(--muted); font-weight: 600; }
     .live-cat { font-size: 13px; font-weight: 600; }
+    .live-brgy { font-size: 11px; font-weight: 600; color: var(--brgy); }
     .live-time { font-size: 10px; color: var(--muted); }
     .live-right { text-align: right; }
     .live-qty { font-size: 13px; font-weight: 700; }
@@ -200,6 +243,7 @@
     .qr-ref-left { display: flex; align-items: center; gap: 8px; }
     .qr-ref-dot { width: 7px; height: 7px; border-radius: 50%; }
     .qr-ref-val { font-size: 12px; color: var(--muted); }
+    .qr-ref-sub { font-size: 11px; color: var(--muted); margin: 12px 0 8px; }
     .dev-panel {
       display: none; width: 100%; max-width: 460px; padding: 16px;
       background: #1a1a2e; border: 2px solid #e67e22; border-radius: 14px; text-align: center;
@@ -268,6 +312,20 @@
 </div>
 
 <div class="card">
+  <div class="brgy-head">
+    <div class="section-label">🏘️ Barangay</div>
+    <label class="brgy-sticky">
+      <input type="checkbox" id="brgySticky" checked onchange="onStickyChange()">
+      Keep after logging
+    </label>
+  </div>
+  <div class="brgy-chips" id="brgyChips">
+    <div class="brgy-loading">Loading barangays…</div>
+  </div>
+  <p class="brgy-note" id="brgyNote">Where is this water going?</p>
+</div>
+
+<div class="card">
   <div class="section-label">Price per Container</div>
   <div class="price-chips" id="priceChips">
     <button class="price-chip selected" onclick="selectPrice(20)">₱20</button>
@@ -318,6 +376,7 @@
     <div class="live-stat"><div class="live-stat-val" id="statNet">—</div><div class="live-stat-label">Net Qty</div></div>
     <div class="live-stat"><div class="live-stat-val" id="statRevenue" style="color:var(--success)">—</div><div class="live-stat-label">Revenue</div></div>
   </div>
+  <div class="brgy-breakdown" id="brgyBreakdown"></div>
   <div id="liveLogEntries"><div class="live-loading">Loading today's entries...</div></div>
 </div>
 
@@ -327,6 +386,8 @@
   <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--walkin)"></div><span>Walk-in</span></div><span class="qr-ref-val">Walk-in</span></div>
   <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--elf)"></div><span>Elf</span></div><span class="qr-ref-val">Elf</span></div>
   <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--tangkal)"></div><span>Tangkal</span></div><span class="qr-ref-val">Tangkal</span></div>
+  <p class="qr-ref-sub">🏘️ Barangay QR codes — scanning one selects that barangay:</p>
+  <div id="qrRefBarangays"></div>
 </div>
 
 <script>
@@ -338,7 +399,7 @@
     if (!url || !url.startsWith('https://script.google.com/')) { alert('Enter a valid URL'); return; }
     localStorage.setItem('WATER_RELEASE_URL', url); WEB_APP_URL = url;
     document.getElementById('setupBanner').style.display = 'none';
-    alert('✅ URL saved!'); fetchTodaysLog();
+    alert('✅ URL saved!'); fetchWaterConfig(); fetchTodaysLog();
   }
 
   let devTapCount = 0, devTapTimer = null;
@@ -358,7 +419,7 @@
     localStorage.setItem('WATER_RELEASE_URL', url); WEB_APP_URL = url;
     document.getElementById('devCurrent').textContent = 'Current: ' + url;
     document.getElementById('setupBanner').style.display = 'none';
-    alert('✅ URL updated!'); fetchTodaysLog();
+    alert('✅ URL updated!'); fetchWaterConfig(); fetchTodaysLog();
   }
   function devClearUrl() {
     if (!confirm('Clear the saved URL?')) return;
@@ -373,6 +434,140 @@
   let currentMode = 'release', html5Scanner = null, isProcessing = false, scanCooldown = false;
   const VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
 
+  // ═══════════════════════════════════════════
+  // BARANGAY
+  // ═══════════════════════════════════════════
+  // Used only if the server config can't be reached. Keep in sync with
+  // CONFIG.waterRelease.barangays in Code.gs.
+  const FALLBACK_BARANGAYS = ['Poblacion', 'Bulungan', 'Cabitoonan', 'Capt. Claudio',
+    'Dumlog', 'Magdugo', 'Sam-ang', 'Subayon', 'Puting Bato'];
+  const UNSPECIFIED = 'Unspecified';
+
+  let barangays = [];
+  let selectedBarangay = localStorage.getItem('WATER_RELEASE_BRGY') || '';
+  let stickyBarangay = localStorage.getItem('WATER_RELEASE_BRGY_STICKY') !== 'off';
+  let configLoaded = false;
+
+  document.getElementById('brgySticky').checked = stickyBarangay;
+
+  function onStickyChange() {
+    stickyBarangay = document.getElementById('brgySticky').checked;
+    localStorage.setItem('WATER_RELEASE_BRGY_STICKY', stickyBarangay ? 'on' : 'off');
+  }
+
+  function fetchWaterConfig() {
+    if (!WEB_APP_URL) { useFallbackBarangays('No web app URL set yet'); return; }
+
+    const callbackName = 'cfgcb_' + Date.now();
+    const url = WEB_APP_URL + '?action=getWaterConfig&callback=' + callbackName;
+    let settled = false;
+
+    window[callbackName] = function(data) {
+      settled = true;
+      delete window[callbackName];
+      const s = document.getElementById('cfgScript'); if (s) s.remove();
+      if (data && data.success && Array.isArray(data.barangays) && data.barangays.length) {
+        barangays = data.barangays.filter(b => b && b !== UNSPECIFIED);
+        configLoaded = true;
+        renderBarangayChips();
+        setBrgyNote('', false);
+      } else {
+        useFallbackBarangays('Server sent no barangay list');
+      }
+    };
+
+    setTimeout(() => {
+      if (!settled && window[callbackName]) {
+        delete window[callbackName];
+        const s = document.getElementById('cfgScript'); if (s) s.remove();
+        useFallbackBarangays('Could not reach the sheet — using built-in list');
+      }
+    }, 10000);
+
+    const script = document.createElement('script');
+    script.id = 'cfgScript'; script.src = url;
+    script.onerror = function() {
+      if (!settled && window[callbackName]) {
+        delete window[callbackName];
+        useFallbackBarangays('Could not reach the sheet — using built-in list');
+      }
+      this.remove();
+    };
+    document.body.appendChild(script);
+  }
+
+  function useFallbackBarangays(reason) {
+    barangays = FALLBACK_BARANGAYS.slice();
+    configLoaded = false;
+    renderBarangayChips();
+    if (reason) setBrgyNote('⚠️ ' + reason, true);
+  }
+
+  function setBrgyNote(msg, warn) {
+    const el = document.getElementById('brgyNote');
+    el.textContent = msg || (selectedBarangay ? '' : 'Where is this water going?');
+    el.className = 'brgy-note' + (warn ? ' warn' : '');
+  }
+
+  function renderBarangayChips() {
+    const wrap = document.getElementById('brgyChips');
+
+    // A remembered barangay that isn't in the list yet (custom entry)
+    if (selectedBarangay && selectedBarangay !== UNSPECIFIED &&
+        !barangays.some(b => b.toLowerCase() === selectedBarangay.toLowerCase())) {
+      barangays.push(selectedBarangay);
+    }
+
+    let html = barangays.map(function(b) {
+      const sel = selectedBarangay && b.toLowerCase() === selectedBarangay.toLowerCase();
+      return '<button class="brgy-chip' + (sel ? ' selected' : '') + '" ' +
+             'onclick="selectBarangay(' + JSON.stringify(b).replace(/"/g, '&quot;') + ')">' +
+             escapeHtml(b) + '</button>';
+    }).join('');
+
+    const unspecSel = selectedBarangay === UNSPECIFIED;
+    html += '<button class="brgy-chip unspec' + (unspecSel ? ' selected' : '') + '" ' +
+            'onclick="selectBarangay(\'' + UNSPECIFIED + '\')">Unspecified</button>';
+    html += '<button class="brgy-chip other" onclick="addCustomBarangay()">＋ Other</button>';
+
+    wrap.innerHTML = html;
+    renderQrRefBarangays();
+    updateSubmitBtn();
+  }
+
+  function renderQrRefBarangays() {
+    const el = document.getElementById('qrRefBarangays');
+    if (!el) return;
+    el.innerHTML = barangays.map(function(b) {
+      return '<div class="qr-ref-item">' +
+        '<div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--brgy)"></div>' +
+        '<span>' + escapeHtml(b) + '</span></div>' +
+        '<span class="qr-ref-val">' + escapeHtml(b) + '</span></div>';
+    }).join('');
+  }
+
+  function selectBarangay(b) {
+    selectedBarangay = b;
+    localStorage.setItem('WATER_RELEASE_BRGY', b);
+    renderBarangayChips();
+    setBrgyNote('', false);
+  }
+
+  function addCustomBarangay() {
+    const name = (prompt('Barangay name:') || '').trim();
+    if (!name) return;
+    if (!barangays.some(b => b.toLowerCase() === name.toLowerCase())) barangays.push(name);
+    selectBarangay(name);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ═══════════════════════════════════════════
+  // MODE / SCANNER
+  // ═══════════════════════════════════════════
   function setMode(mode) {
     currentMode = mode;
     document.getElementById('modeLabel').textContent = mode === 'release' ? 'RELEASE' : 'RETURNED';
@@ -406,13 +601,41 @@
       }
     }
   }
+
   function onScanSuccess(decodedText) {
     if (isProcessing || scanCooldown) return; scanCooldown = true;
-    const match = VALID_CATEGORIES.find(c => c.toLowerCase() === decodedText.trim().toLowerCase());
-    if (match) { if (navigator.vibrate) navigator.vibrate(150); selectCategory(match); setStatus('✅ Detected: ' + match); stopScanner(); }
-    else setStatus('❌ Unknown QR: ' + decodedText.trim());
+    const raw = decodedText.trim();
+
+    // 1. Category QR
+    const catMatch = VALID_CATEGORIES.find(c => c.toLowerCase() === raw.toLowerCase());
+    if (catMatch) {
+      if (navigator.vibrate) navigator.vibrate(150);
+      selectCategory(catMatch);
+      setStatus('✅ Category: ' + catMatch);
+      // Only stop the camera once we have both pieces
+      if (selectedBarangay) stopScanner();
+      else setStatus('✅ Category: ' + catMatch + ' — now scan or tap a barangay');
+      setTimeout(() => { scanCooldown = false; }, 2000);
+      return;
+    }
+
+    // 2. Barangay QR
+    const brgyMatch = barangays.find(b => b.toLowerCase() === raw.toLowerCase());
+    if (brgyMatch || raw.toLowerCase() === UNSPECIFIED.toLowerCase()) {
+      const pick = brgyMatch || UNSPECIFIED;
+      if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+      selectBarangay(pick);
+      setStatus('✅ Barangay: ' + pick);
+      if (selectedCategory) stopScanner();
+      else setStatus('✅ Barangay: ' + pick + ' — now scan or tap a category');
+      setTimeout(() => { scanCooldown = false; }, 2000);
+      return;
+    }
+
+    setStatus('❌ Unknown QR: ' + raw);
     setTimeout(() => { scanCooldown = false; }, 2000);
   }
+
   async function stopScanner() {
     if (html5Scanner) { try { await html5Scanner.stop(); } catch(e) {} try { html5Scanner.clear(); } catch(e) {} html5Scanner = null; }
     document.getElementById('qr-reader').style.display = 'none';
@@ -446,20 +669,37 @@
     document.getElementById('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
     updateSubmitBtn();
   }
+
   function updateSubmitBtn() {
-    const btn = document.getElementById('submitBtn'), verb = currentMode === 'returned' ? 'Return' : 'Log';
-    if (selectedCategory) {
-      btn.disabled = false;
-      btn.textContent = verb + ' ' + quantity + 'x ' + selectedCategory + ' — ₱' + (quantity * price).toFixed(2);
-      btn.style.background = currentMode === 'returned' ? 'linear-gradient(135deg, #f87171, #dc2626)' : 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
-    } else { btn.disabled = true; btn.textContent = 'Select a category to ' + verb.toLowerCase(); btn.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)'; }
+    const btn = document.getElementById('submitBtn');
+    const verb = currentMode === 'returned' ? 'Return' : 'Log';
+    const grad = currentMode === 'returned'
+      ? 'linear-gradient(135deg, #f87171, #dc2626)'
+      : 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
+
+    if (!selectedCategory) {
+      btn.disabled = true;
+      btn.textContent = 'Select a category to ' + verb.toLowerCase();
+      btn.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
+      return;
+    }
+    if (!selectedBarangay) {
+      btn.disabled = true;
+      btn.textContent = 'Select a barangay to ' + verb.toLowerCase();
+      btn.style.background = 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = verb + ' ' + quantity + 'x ' + selectedCategory +
+      ' → ' + selectedBarangay + '  —  ₱' + (quantity * price).toFixed(2);
+    btn.style.background = grad;
   }
 
   // ═══════════════════════════════════════════
   // SUBMIT via JSONP
   // ═══════════════════════════════════════════
   function submitEntry() {
-    if (isProcessing || !WEB_APP_URL || !selectedCategory) return;
+    if (isProcessing || !WEB_APP_URL || !selectedCategory || !selectedBarangay) return;
     const qtyInput = document.getElementById('qtyDisplay');
     let val = parseInt(qtyInput.value, 10); if (isNaN(val) || val < 1) val = 1;
     quantity = val; qtyInput.value = quantity;
@@ -467,13 +707,15 @@
     isProcessing = true;
     const btn = document.getElementById('submitBtn'); btn.disabled = true;
     const verb = currentMode === 'returned' ? 'Returning' : 'Logging';
-    showSpinner(true, verb + ' ' + quantity + 'x ' + selectedCategory + '...');
+    showSpinner(true, verb + ' ' + quantity + 'x ' + selectedCategory + ' → ' + selectedBarangay + '...');
     clearResult();
 
     const callbackName = 'cb_' + Date.now();
     const url = WEB_APP_URL + '?category=' + encodeURIComponent(selectedCategory) +
       '&quantity=' + encodeURIComponent(quantity) + '&price=' + encodeURIComponent(price) +
-      '&action=' + encodeURIComponent(currentMode) + '&callback=' + callbackName;
+      '&action=' + encodeURIComponent(currentMode) +
+      '&barangay=' + encodeURIComponent(selectedBarangay) +
+      '&callback=' + callbackName;
 
     window[callbackName] = function(data) {
       delete window[callbackName];
@@ -485,8 +727,14 @@
         setTimeout(() => { document.body.style.background = '#0a1628'; }, 600);
         quantity = 1; document.getElementById('qtyDisplay').value = '1'; updateDisplays();
         selectedCategory = null; VALID_CATEGORIES.forEach(c => document.getElementById('card-' + c).classList.remove('selected'));
+        // Barangay stays selected unless "Keep after logging" is off —
+        // one delivery run is usually all in the same barangay.
+        if (!stickyBarangay) {
+          selectedBarangay = '';
+          localStorage.removeItem('WATER_RELEASE_BRGY');
+          renderBarangayChips();
+        }
         updateSubmitBtn();
-        // Refresh live log after successful submit
         setTimeout(fetchTodaysLog, 500);
       } else {
         showResult(data.message, 'error'); btn.disabled = false;
@@ -501,7 +749,6 @@
         showSpinner(false);
         showResult('❌ Request timed out. Refreshing log to check...', 'error');
         btn.disabled = false; isProcessing = false;
-        // Still refresh log — the entry may have gone through
         setTimeout(fetchTodaysLog, 1000);
       }
     }, 15000);
@@ -542,17 +789,29 @@
         return;
       }
 
-      // Update date
       document.getElementById('liveLogDate').textContent = '📅 ' + (data.date || 'Today');
 
-      // Update totals
       const t = data.totals || {};
       document.getElementById('statReleased').textContent = t.released || 0;
       document.getElementById('statReturned').textContent = t.returned || 0;
       document.getElementById('statNet').textContent = t.netQty || 0;
       document.getElementById('statRevenue').textContent = '₱' + (t.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
 
-      // Render entries
+      // ── Today by barangay ──────────────────────────
+      const bd = document.getElementById('brgyBreakdown');
+      if (data.byBarangay && data.byBarangay.length) {
+        bd.innerHTML = '<div class="brgy-bd-title">Today by barangay</div>' +
+          '<div class="brgy-bd-list">' +
+          data.byBarangay.map(function(b) {
+            return '<div class="brgy-bd-item">' +
+              '<span class="brgy-bd-name">' + escapeHtml(b.barangay) + '</span>' +
+              '<span class="brgy-bd-val">' + b.netQty + ' · ₱' +
+              (b.revenue || 0).toFixed(0) + '</span></div>';
+          }).join('') + '</div>';
+      } else {
+        bd.innerHTML = '';
+      }
+
       if (!data.entries || data.entries.length === 0) {
         container.innerHTML = '<div class="live-empty">No entries today yet</div>';
         return;
@@ -564,6 +823,8 @@
         const actionLabel = e.action === 'Returned' ? '📥 RTN' : '📤 REL';
         const totalColor = e.action === 'Returned' ? 'var(--error)' : 'var(--success)';
         const sign = e.action === 'Returned' ? '-' : '';
+        const brgyLine = e.barangay
+          ? '<div class="live-brgy">🏘️ ' + escapeHtml(e.barangay) + '</div>' : '';
 
         return '<div class="live-entry">' +
           '<div class="live-left">' +
@@ -571,6 +832,7 @@
             '<div>' +
               '<div class="live-cat">' + e.category +
                 ' <span class="live-action-badge ' + actionClass + '">' + actionLabel + '</span></div>' +
+              brgyLine +
               '<div class="live-id">' + e.id + '</div>' +
               '<div class="live-time">' + e.time + '</div>' +
             '</div>' +
@@ -583,7 +845,6 @@
       }).join('');
     };
 
-    // Timeout for log fetch
     setTimeout(() => {
       if (window[callbackName]) {
         delete window[callbackName];
@@ -610,8 +871,14 @@
   function clearResult() { const el = document.getElementById('result'); el.style.display = 'none'; el.textContent = ''; }
   document.addEventListener('visibilitychange', () => { if (document.hidden && html5Scanner) stopScanner(); });
 
-  // Load today's log on page load
-  if (WEB_APP_URL) setTimeout(fetchTodaysLog, 500);
+  // Boot
+  renderBarangayChips();
+  if (WEB_APP_URL) {
+    fetchWaterConfig();
+    setTimeout(fetchTodaysLog, 500);
+  } else {
+    useFallbackBarangays('');
+  }
 </script>
 </body>
 </html>
