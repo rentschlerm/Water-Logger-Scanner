@@ -11,7 +11,7 @@
       --text: #e2e8f0; --muted: #7a8ba8; --accent: #38bdf8;
       --walkin: #22d3ee; --elf: #a78bfa; --tangkal: #fb923c;
       --brgy: #f472b6;
-      --success: #34d399; --error: #f87171;
+      --success: #34d399; --error: #f87171; --wait: #e67e22;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -21,6 +21,7 @@
       align-items: center; padding: 16px; gap: 14px;
       transition: background 0.3s;
     }
+    body.locked { overflow: hidden; }
     h1 { font-size: 22px; color: var(--accent); margin-top: 8px; }
     .subtitle { font-size: 13px; color: var(--muted); }
     .mode-buttons { display: flex; gap: 10px; width: 100%; max-width: 460px; }
@@ -33,22 +34,54 @@
     .mode-btn.returned { background: var(--error); color: #fff; }
     .mode-label { font-size: 12px; color: var(--muted); }
     .mode-label span { font-weight: 700; font-size: 14px; color: #fff; }
-    .setup-banner {
-      width: 100%; max-width: 460px; padding: 14px;
-      background: #2b1a0d; border: 2px solid #e67e22;
-      border-radius: 12px; display: none; text-align: center;
-      font-size: 13px; color: #e67e22; line-height: 1.6;
+
+    /* ── Device lock screen ──────────────────────────────── */
+    .lock-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0a1628;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; overflow-y: auto;
     }
-    .setup-banner input {
-      width: 100%; margin-top: 8px; padding: 10px;
-      border-radius: 8px; border: 1px solid #e67e22;
-      background: var(--bg); color: #fff; font-size: 12px; text-align: center;
+    .lock-overlay.show { display: flex; }
+    .lock-box {
+      width: 100%; max-width: 380px; background: var(--card);
+      border: 1px solid var(--bdr); border-radius: 16px;
+      padding: 24px 20px; text-align: center;
     }
-    .setup-banner button {
-      margin-top: 8px; padding: 8px 20px;
-      background: #e67e22; color: #fff; border: none;
-      border-radius: 8px; font-weight: bold; cursor: pointer;
+    .lock-icon { font-size: 38px; line-height: 1; }
+    .lock-title { font-size: 19px; font-weight: 700; color: var(--accent); margin: 10px 0 6px; }
+    .lock-sub { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+    .lock-box input {
+      width: 100%; padding: 13px; margin-bottom: 10px;
+      border-radius: 10px; border: 1px solid var(--bdr);
+      background: var(--raised); color: var(--text);
+      font-size: 15px; text-align: center; outline: none;
     }
+    .lock-box input:focus { border-color: var(--accent); }
+    .lock-box input.code {
+      letter-spacing: 4px; text-transform: uppercase;
+      font-weight: 700; font-size: 19px;
+    }
+    .lock-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), #0ea5e9); color: var(--bg);
+    }
+    .lock-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .lock-btn.ghost {
+      background: var(--raised); color: var(--muted);
+      border: 1px solid var(--bdr); margin-top: 8px;
+    }
+    .lock-msg { font-size: 12.5px; line-height: 1.6; margin-top: 14px; min-height: 18px; }
+    .lock-msg.err  { color: var(--error); }
+    .lock-msg.ok   { color: var(--success); }
+    .lock-msg.wait { color: var(--wait); }
+    .lock-id { font-size: 9px; color: #3d4d66; margin-top: 18px; word-break: break-all; }
+    .lock-pulse { animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+    @media (prefers-reduced-motion: reduce) { .lock-pulse { animation: none; } }
+
     .card {
       width: 100%; max-width: 460px;
       background: var(--card); border-radius: 16px;
@@ -108,7 +141,7 @@
     .brgy-chip.unspec { font-style: italic; opacity: 0.75; }
     .brgy-chip.other { border-style: dashed; }
     .brgy-note { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
-    .brgy-note.warn { color: #e67e22; }
+    .brgy-note.warn { color: var(--wait); }
     .brgy-loading { font-size: 12px; color: var(--muted); padding: 6px 0; }
 
     .price-chips { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -246,23 +279,51 @@
     .qr-ref-sub { font-size: 11px; color: var(--muted); margin: 12px 0 8px; }
     .dev-panel {
       display: none; width: 100%; max-width: 460px; padding: 16px;
-      background: #1a1a2e; border: 2px solid #e67e22; border-radius: 14px; text-align: center;
+      background: #1a1a2e; border: 2px solid var(--wait); border-radius: 14px; text-align: center;
     }
-    .dev-header { font-size: 14px; font-weight: 700; color: #e67e22; margin-bottom: 10px; }
+    .dev-header { font-size: 14px; font-weight: 700; color: var(--wait); margin-bottom: 10px; }
     .dev-panel label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: block; text-align: left; margin-bottom: 4px; }
-    .dev-panel input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #e67e22; background: var(--bg); color: #fff; font-size: 11px; margin-bottom: 10px; }
+    .dev-panel input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--wait); background: var(--bg); color: #fff; font-size: 11px; margin-bottom: 10px; }
     .dev-btns { display: flex; gap: 8px; margin-bottom: 10px; }
     .dev-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; background: #27ae60; color: #fff; }
     .dev-current { font-size: 10px; color: #666; word-break: break-all; margin: 0; }
+    .dev-sep { height: 1px; background: #333; margin: 12px 0; }
   </style>
 </head>
 <body>
 
-<div class="setup-banner" id="setupBanner">
-  ⚠️ <strong>One-time setup:</strong> Paste your Google Apps Script Web App URL<br>
-  <small>(Deploy → New Deployment → Web App → Copy URL)</small>
-  <input type="text" id="setupUrl" placeholder="https://script.google.com/macros/s/.../exec">
-  <button onclick="saveWebAppUrl()">💾 Save URL</button>
+<!-- ══════════════════ DEVICE LOCK SCREEN ══════════════════ -->
+<div class="lock-overlay show" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-icon" id="lockIcon">🔒</div>
+    <div class="lock-title" id="lockTitle">Register this device</div>
+    <div class="lock-sub" id="lockSub">
+      Only devices the owner has approved can log water.
+    </div>
+
+    <!-- Shown when no Web App URL is saved yet -->
+    <div id="lockUrlWrap" style="display:none">
+      <input type="text" id="lockUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="lock-btn" onclick="lockSaveUrl()">Save Web App URL</button>
+    </div>
+
+    <!-- Registration form -->
+    <div id="lockFormWrap" style="display:none">
+      <input type="text" id="lockName" placeholder="Name this device (e.g. Delivery phone)" maxlength="40">
+      <input type="text" id="lockCode" class="code" placeholder="ENROL CODE" maxlength="12"
+             autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <button class="lock-btn" id="lockRegisterBtn" onclick="registerThisDevice()">Register this device</button>
+    </div>
+
+    <!-- Waiting for approval / blocked -->
+    <div id="lockWaitWrap" style="display:none">
+      <button class="lock-btn" id="lockCheckBtn" onclick="checkApproval(true)">Check again</button>
+      <button class="lock-btn ghost" onclick="resetDevice()">Register a different way</button>
+    </div>
+
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="lock-id" id="lockDeviceId"></div>
+  </div>
 </div>
 
 <h1 id="appTitle" onclick="devTap()">💧 Water Release</h1>
@@ -278,6 +339,12 @@
     <button onclick="devClose()" style="background:#555;">✕ Close</button>
   </div>
   <p class="dev-current" id="devCurrent">No URL set</p>
+  <div class="dev-sep"></div>
+  <label>This device</label>
+  <p class="dev-current" id="devDevice">—</p>
+  <div class="dev-btns" style="margin-top:10px;">
+    <button onclick="resetDevice()" style="background:#e74c3c;">🚪 Sign this device out</button>
+  </div>
 </div>
 
 <div class="mode-buttons">
@@ -391,109 +458,364 @@
 </div>
 
 <script>
-  let WEB_APP_URL = localStorage.getItem('WATER_RELEASE_URL') || '';
-  if (!WEB_APP_URL) document.getElementById('setupBanner').style.display = 'block';
+  // ═══════════════════════════════════════════
+  // DEVICE IDENTITY
+  // ═══════════════════════════════════════════
+  // Built into the page so staff never have to type it. A URL saved from the
+  // developer panel overrides this — handy for testing a new deployment
+  // without re-uploading the file. Update this line after every
+  // "Deploy → New deployment".
+  var DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyvSIXV47dfsjZutPvtjKMWGz6XgfqJ3ZvGTvkDQvLVKLlIvuZhkI5vp7O5_9tk_38/exec';
 
-  function saveWebAppUrl() {
-    const url = document.getElementById('setupUrl').value.trim();
-    if (!url || !url.startsWith('https://script.google.com/')) { alert('Enter a valid URL'); return; }
-    localStorage.setItem('WATER_RELEASE_URL', url); WEB_APP_URL = url;
-    document.getElementById('setupBanner').style.display = 'none';
-    alert('✅ URL saved!'); fetchWaterConfig(); fetchTodaysLog();
+  var WEB_APP_URL = localStorage.getItem('WATER_RELEASE_URL') || DEFAULT_WEB_APP_URL;
+
+  function urlLabel() {
+    if (!WEB_APP_URL) return 'No URL set';
+    return (localStorage.getItem('WATER_RELEASE_URL') ? 'Override: ' : 'Built in: ') + WEB_APP_URL;
   }
 
-  let devTapCount = 0, devTapTimer = null;
+  function makeDeviceId() {
+    try {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      if (window.crypto && crypto.getRandomValues) {
+        var a = new Uint8Array(16); crypto.getRandomValues(a);
+        return Array.prototype.map.call(a, function (b) {
+          return ('0' + b.toString(16)).slice(-2);
+        }).join('');
+      }
+    } catch (e) {}
+    return 'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+
+  var DEVICE_ID = localStorage.getItem('WR_DEVICE_ID');
+  if (!DEVICE_ID) { DEVICE_ID = makeDeviceId(); localStorage.setItem('WR_DEVICE_ID', DEVICE_ID); }
+  var DEVICE_TOKEN = localStorage.getItem('WR_DEVICE_TOKEN') || '';
+  var DEVICE_NAME  = localStorage.getItem('WR_DEVICE_NAME') || '';
+
+  var appUnlocked = false;
+  var pendingTimer = null;
+
+  // ═══════════════════════════════════════════
+  // SHARED JSONP CALLER
+  // Adds deviceId + token to every request unless anonymous.
+  // ═══════════════════════════════════════════
+  var jsonpSeq = 0;
+
+  function jsonp(params, opts) {
+    opts = opts || {};
+    if (!WEB_APP_URL) { if (opts.error) opts.error('No Web App URL is saved'); return; }
+
+    var cb = 'wrcb_' + (++jsonpSeq) + '_' + Date.now();
+    var qs = [];
+    Object.keys(params).forEach(function (k) {
+      var v = params[k];
+      if (v === undefined || v === null) return;
+      qs.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+    });
+    if (!opts.anonymous) {
+      qs.push('deviceId=' + encodeURIComponent(DEVICE_ID));
+      qs.push('token=' + encodeURIComponent(DEVICE_TOKEN));
+    }
+    qs.push('callback=' + cb);
+
+    var script = document.createElement('script');
+    var timer = null, done = false;
+
+    function cleanup() {
+      done = true;
+      if (timer) clearTimeout(timer);
+      try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cb] = function (data) {
+      if (done) return;
+      cleanup();
+      if (data && data.authError) {
+        handleAuthError(data);
+        if (opts.error) opts.error(data.message || 'This device is not allowed');
+        return;
+      }
+      if (opts.success) opts.success(data);
+    };
+
+    timer = setTimeout(function () {
+      if (done) return;
+      cleanup();
+      if (opts.error) opts.error('timeout');
+    }, opts.timeout || 15000);
+
+    script.onerror = function () {
+      if (done) return;
+      cleanup();
+      if (opts.error) opts.error('network');
+    };
+
+    script.src = WEB_APP_URL + '?' + qs.join('&');
+    document.body.appendChild(script);
+  }
+
+  /** The server refused the request. Take the app back to the lock screen. */
+  function handleAuthError(data) {
+    var code = data.authError;
+    if (code === 'NO_DEVICE' || code === 'BAD_TOKEN') {
+      DEVICE_TOKEN = '';
+      localStorage.removeItem('WR_DEVICE_TOKEN');
+      showLock('register', data.message || 'This device needs to register again.', 'err');
+    } else if (code === 'BLOCKED') {
+      showLock('blocked', data.message || 'This device has been blocked.', 'err');
+    } else {
+      showLock('pending', data.message || 'Waiting for the owner to approve this device.', 'wait');
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // LOCK SCREEN
+  // ═══════════════════════════════════════════
+  function el(id) { return document.getElementById(id); }
+
+  function showLock(view, msg, tone) {
+    appUnlocked = false;
+    if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+    try { stopScanner(); } catch (e) {}
+
+    el('lockOverlay').classList.add('show');
+    document.body.classList.add('locked');
+
+    el('lockUrlWrap').style.display  = view === 'url'     ? 'block' : 'none';
+    el('lockFormWrap').style.display = view === 'register' ? 'block' : 'none';
+    el('lockWaitWrap').style.display = (view === 'pending' || view === 'blocked') ? 'block' : 'none';
+
+    if (view === 'url') {
+      el('lockIcon').textContent = '🔗';
+      el('lockTitle').textContent = 'Connect to your sheet';
+      el('lockSub').textContent = 'Paste the Web App URL from the spreadsheet menu: Get Scanner URL.';
+      el('lockUrl').value = WEB_APP_URL || '';
+    } else if (view === 'register') {
+      el('lockIcon').textContent = '🔒';
+      el('lockIcon').classList.remove('lock-pulse');
+      el('lockTitle').textContent = 'Register this device';
+      el('lockSub').textContent = 'Only devices the owner has approved can log water. Ask for an enrolment code from the spreadsheet menu.';
+      if (DEVICE_NAME) el('lockName').value = DEVICE_NAME;
+    } else if (view === 'pending') {
+      el('lockIcon').textContent = '⏳';
+      el('lockIcon').classList.add('lock-pulse');
+      el('lockTitle').textContent = 'Waiting for approval';
+      el('lockSub').textContent = 'The owner needs to set this device to Approved on the Devices sheet. This screen unlocks on its own once they do.';
+      el('lockCheckBtn').style.display = 'block';
+    } else if (view === 'blocked') {
+      el('lockIcon').textContent = '⛔';
+      el('lockIcon').classList.remove('lock-pulse');
+      el('lockTitle').textContent = 'Device blocked';
+      el('lockSub').textContent = 'The owner has blocked this device. Ask them to set it back to Approved.';
+      el('lockCheckBtn').style.display = 'block';
+    }
+
+    setLockMsg(msg || '', tone);
+    el('lockDeviceId').textContent = 'Device ID · ' + DEVICE_ID;
+
+    if (view === 'pending') schedulePendingCheck();
+  }
+
+  function setLockMsg(msg, tone) {
+    var m = el('lockMsg');
+    m.textContent = msg || '';
+    m.className = 'lock-msg' + (tone ? ' ' + tone : '');
+  }
+
+  function unlockApp(name) {
+    appUnlocked = true;
+    if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+    el('lockOverlay').classList.remove('show');
+    document.body.classList.remove('locked');
+    if (name) { DEVICE_NAME = name; localStorage.setItem('WR_DEVICE_NAME', name); }
+    el('devDevice').textContent = (DEVICE_NAME || 'Unnamed') + ' · ' + DEVICE_ID;
+    fetchWaterConfig();
+    setTimeout(fetchTodaysLog, 400);
+  }
+
+  function lockSaveUrl() {
+    var url = el('lockUrl').value.trim();
+    if (!url || url.indexOf('https://script.google.com/') !== 0) {
+      setLockMsg('That does not look like an Apps Script Web App URL.', 'err');
+      return;
+    }
+    localStorage.setItem('WATER_RELEASE_URL', url);
+    WEB_APP_URL = url;
+    el('devCurrent').textContent = urlLabel();
+    boot();
+  }
+
+  function registerThisDevice() {
+    var name = el('lockName').value.trim();
+    var code = el('lockCode').value.trim();
+    if (!name) { setLockMsg('Give this device a name so you can recognise it later.', 'err'); return; }
+    if (!code) { setLockMsg('Enter the enrolment code from the spreadsheet menu.', 'err'); return; }
+
+    var btn = el('lockRegisterBtn');
+    btn.disabled = true; btn.textContent = 'Registering…';
+    setLockMsg('Contacting the sheet…', '');
+
+    jsonp({
+      action: 'registerDevice',
+      deviceId: DEVICE_ID,
+      deviceName: name,
+      enrollCode: code,
+      ua: (navigator.userAgent || '').slice(0, 150)
+    }, {
+      anonymous: true,
+      timeout: 20000,
+      success: function (data) {
+        btn.disabled = false; btn.textContent = 'Register this device';
+        if (!data || !data.success) {
+          setLockMsg((data && data.message) || 'Registration failed.', 'err');
+          return;
+        }
+        DEVICE_TOKEN = data.token || '';
+        DEVICE_NAME  = data.name || name;
+        localStorage.setItem('WR_DEVICE_TOKEN', DEVICE_TOKEN);
+        localStorage.setItem('WR_DEVICE_NAME', DEVICE_NAME);
+        el('lockCode').value = '';
+
+        if (data.status === 'Approved') unlockApp(DEVICE_NAME);
+        else showLock('pending', data.message, 'wait');
+      },
+      error: function (why) {
+        btn.disabled = false; btn.textContent = 'Register this device';
+        setLockMsg(why === 'timeout'
+          ? 'The sheet did not answer. Check your signal and try again.'
+          : 'Could not reach the sheet. Check the Web App URL and your signal.', 'err');
+      }
+    });
+  }
+
+  function checkApproval(manual) {
+    if (!DEVICE_TOKEN) { showLock('register', '', ''); return; }
+    if (manual) setLockMsg('Checking…', '');
+
+    jsonp({ action: 'deviceStatus', deviceId: DEVICE_ID, token: DEVICE_TOKEN }, {
+      anonymous: true,
+      timeout: 12000,
+      success: function (data) {
+        if (!data || !data.success) {
+          if (manual) setLockMsg('Could not read the device list.', 'err');
+          schedulePendingCheck();
+          return;
+        }
+        if (data.status === 'Approved') { unlockApp(data.name); return; }
+        if (data.status === 'Blocked')  { showLock('blocked', data.message, 'err'); return; }
+        if (data.status === 'Unknown' || data.status === 'Stale') {
+          DEVICE_TOKEN = '';
+          localStorage.removeItem('WR_DEVICE_TOKEN');
+          showLock('register', data.message, 'err');
+          return;
+        }
+        showLock('pending', manual ? 'Still waiting. The owner has not approved it yet.' : '', 'wait');
+      },
+      error: function () {
+        if (manual) setLockMsg('Could not reach the sheet. Check your signal.', 'err');
+        schedulePendingCheck();
+      }
+    });
+  }
+
+  function schedulePendingCheck() {
+    if (pendingTimer) clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(function () { checkApproval(false); }, 12000);
+  }
+
+  function resetDevice() {
+    if (!confirm('Sign this device out?\n\nIt will need a new enrolment code to log water again.')) return;
+    localStorage.removeItem('WR_DEVICE_TOKEN');
+    localStorage.removeItem('WR_DEVICE_NAME');
+    DEVICE_TOKEN = ''; DEVICE_NAME = '';
+    devClose();
+    showLock('register', 'Signed out. Ask the owner for a new enrolment code.', '');
+  }
+
+  function boot() {
+    if (!WEB_APP_URL) { showLock('url', '', ''); return; }
+    if (!DEVICE_TOKEN) { showLock('register', '', ''); return; }
+    showLock('pending', 'Checking this device…', '');
+    checkApproval(false);
+  }
+
+  // ═══════════════════════════════════════════
+  // DEVELOPER PANEL
+  // ═══════════════════════════════════════════
+  var devTapCount = 0, devTapTimer = null;
   function devTap() {
     devTapCount++; clearTimeout(devTapTimer);
-    devTapTimer = setTimeout(() => { devTapCount = 0; }, 1500);
+    devTapTimer = setTimeout(function () { devTapCount = 0; }, 1500);
     if (devTapCount >= 5) {
-      devTapCount = 0; const p = document.getElementById('devPanel'); p.style.display = 'block';
-      document.getElementById('devUrl').value = WEB_APP_URL || '';
-      document.getElementById('devCurrent').textContent = WEB_APP_URL ? 'Current: ' + WEB_APP_URL : 'No URL set';
+      devTapCount = 0;
+      var p = el('devPanel'); p.style.display = 'block';
+      el('devUrl').value = WEB_APP_URL || '';
+      el('devCurrent').textContent = urlLabel();
+      el('devDevice').textContent = (DEVICE_NAME || 'Not registered') + ' · ' + DEVICE_ID;
       p.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
   function devSaveUrl() {
-    const url = document.getElementById('devUrl').value.trim();
-    if (!url || !url.startsWith('https://script.google.com/')) { alert('Enter a valid URL'); return; }
+    var url = el('devUrl').value.trim();
+    if (!url || url.indexOf('https://script.google.com/') !== 0) { alert('Enter a valid URL'); return; }
     localStorage.setItem('WATER_RELEASE_URL', url); WEB_APP_URL = url;
-    document.getElementById('devCurrent').textContent = 'Current: ' + url;
-    document.getElementById('setupBanner').style.display = 'none';
-    alert('✅ URL updated!'); fetchWaterConfig(); fetchTodaysLog();
+    el('devCurrent').textContent = urlLabel();
+    alert('✅ URL updated!');
+    boot();
   }
   function devClearUrl() {
-    if (!confirm('Clear the saved URL?')) return;
-    localStorage.removeItem('WATER_RELEASE_URL'); WEB_APP_URL = '';
-    document.getElementById('devCurrent').textContent = 'No URL set';
-    document.getElementById('devUrl').value = '';
-    document.getElementById('setupBanner').style.display = 'block';
+    if (!confirm('Go back to the URL built into this page?')) return;
+    localStorage.removeItem('WATER_RELEASE_URL');
+    WEB_APP_URL = DEFAULT_WEB_APP_URL;
+    el('devCurrent').textContent = urlLabel();
+    el('devUrl').value = WEB_APP_URL;
+    alert(DEFAULT_WEB_APP_URL ? '↩️ Back to the built-in URL.' : '🗑️ URL cleared.');
+    boot();
   }
-  function devClose() { document.getElementById('devPanel').style.display = 'none'; }
-
-  let selectedCategory = null, quantity = 1, price = 20;
-  let currentMode = 'release', html5Scanner = null, isProcessing = false, scanCooldown = false;
-  const VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
+  function devClose() { el('devPanel').style.display = 'none'; }
 
   // ═══════════════════════════════════════════
-  // BARANGAY
+  // APP STATE
   // ═══════════════════════════════════════════
+  var selectedCategory = null, quantity = 1, price = 20;
+  var currentMode = 'release', html5Scanner = null, isProcessing = false, scanCooldown = false;
+  var VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
+
   // Used only if the server config can't be reached. Keep in sync with
   // CONFIG.waterRelease.barangays in Code.gs.
-  const FALLBACK_BARANGAYS = ['Poblacion', 'Bulungan', 'Cabitoonan', 'Capt. Claudio',
+  var FALLBACK_BARANGAYS = ['Poblacion', 'Bulungan', 'Cabitoonan', 'Capt. Claudio',
     'Dumlog', 'Magdugo', 'Sam-ang', 'Subayon', 'Puting Bato'];
-  const UNSPECIFIED = 'Unspecified';
+  var UNSPECIFIED = 'Unspecified';
 
-  let barangays = [];
-  let selectedBarangay = localStorage.getItem('WATER_RELEASE_BRGY') || '';
-  let stickyBarangay = localStorage.getItem('WATER_RELEASE_BRGY_STICKY') !== 'off';
-  let configLoaded = false;
+  var barangays = [];
+  var selectedBarangay = localStorage.getItem('WATER_RELEASE_BRGY') || '';
+  var stickyBarangay = localStorage.getItem('WATER_RELEASE_BRGY_STICKY') !== 'off';
+  var configLoaded = false;
 
-  document.getElementById('brgySticky').checked = stickyBarangay;
+  el('brgySticky').checked = stickyBarangay;
 
   function onStickyChange() {
-    stickyBarangay = document.getElementById('brgySticky').checked;
+    stickyBarangay = el('brgySticky').checked;
     localStorage.setItem('WATER_RELEASE_BRGY_STICKY', stickyBarangay ? 'on' : 'off');
   }
 
   function fetchWaterConfig() {
-    if (!WEB_APP_URL) { useFallbackBarangays('No web app URL set yet'); return; }
-
-    const callbackName = 'cfgcb_' + Date.now();
-    const url = WEB_APP_URL + '?action=getWaterConfig&callback=' + callbackName;
-    let settled = false;
-
-    window[callbackName] = function(data) {
-      settled = true;
-      delete window[callbackName];
-      const s = document.getElementById('cfgScript'); if (s) s.remove();
-      if (data && data.success && Array.isArray(data.barangays) && data.barangays.length) {
-        barangays = data.barangays.filter(b => b && b !== UNSPECIFIED);
-        configLoaded = true;
-        renderBarangayChips();
-        setBrgyNote('', false);
-      } else {
-        useFallbackBarangays('Server sent no barangay list');
-      }
-    };
-
-    setTimeout(() => {
-      if (!settled && window[callbackName]) {
-        delete window[callbackName];
-        const s = document.getElementById('cfgScript'); if (s) s.remove();
-        useFallbackBarangays('Could not reach the sheet — using built-in list');
-      }
-    }, 10000);
-
-    const script = document.createElement('script');
-    script.id = 'cfgScript'; script.src = url;
-    script.onerror = function() {
-      if (!settled && window[callbackName]) {
-        delete window[callbackName];
-        useFallbackBarangays('Could not reach the sheet — using built-in list');
-      }
-      this.remove();
-    };
-    document.body.appendChild(script);
+    if (!appUnlocked) return;
+    jsonp({ action: 'getWaterConfig' }, {
+      timeout: 10000,
+      success: function (data) {
+        if (data && data.success && Array.isArray(data.barangays) && data.barangays.length) {
+          barangays = data.barangays.filter(function (b) { return b && b !== UNSPECIFIED; });
+          configLoaded = true;
+          renderBarangayChips();
+          setBrgyNote('', false);
+        } else {
+          useFallbackBarangays('Server sent no barangay list');
+        }
+      },
+      error: function () { useFallbackBarangays('Could not reach the sheet — using built-in list'); }
+    });
   }
 
   function useFallbackBarangays(reason) {
@@ -504,28 +826,28 @@
   }
 
   function setBrgyNote(msg, warn) {
-    const el = document.getElementById('brgyNote');
-    el.textContent = msg || (selectedBarangay ? '' : 'Where is this water going?');
-    el.className = 'brgy-note' + (warn ? ' warn' : '');
+    var e = el('brgyNote');
+    e.textContent = msg || (selectedBarangay ? '' : 'Where is this water going?');
+    e.className = 'brgy-note' + (warn ? ' warn' : '');
   }
 
   function renderBarangayChips() {
-    const wrap = document.getElementById('brgyChips');
+    var wrap = el('brgyChips');
 
     // A remembered barangay that isn't in the list yet (custom entry)
     if (selectedBarangay && selectedBarangay !== UNSPECIFIED &&
-        !barangays.some(b => b.toLowerCase() === selectedBarangay.toLowerCase())) {
+        !barangays.some(function (b) { return b.toLowerCase() === selectedBarangay.toLowerCase(); })) {
       barangays.push(selectedBarangay);
     }
 
-    let html = barangays.map(function(b) {
-      const sel = selectedBarangay && b.toLowerCase() === selectedBarangay.toLowerCase();
+    var html = barangays.map(function (b) {
+      var sel = selectedBarangay && b.toLowerCase() === selectedBarangay.toLowerCase();
       return '<button class="brgy-chip' + (sel ? ' selected' : '') + '" ' +
              'onclick="selectBarangay(' + JSON.stringify(b).replace(/"/g, '&quot;') + ')">' +
              escapeHtml(b) + '</button>';
     }).join('');
 
-    const unspecSel = selectedBarangay === UNSPECIFIED;
+    var unspecSel = selectedBarangay === UNSPECIFIED;
     html += '<button class="brgy-chip unspec' + (unspecSel ? ' selected' : '') + '" ' +
             'onclick="selectBarangay(\'' + UNSPECIFIED + '\')">Unspecified</button>';
     html += '<button class="brgy-chip other" onclick="addCustomBarangay()">＋ Other</button>';
@@ -536,9 +858,9 @@
   }
 
   function renderQrRefBarangays() {
-    const el = document.getElementById('qrRefBarangays');
-    if (!el) return;
-    el.innerHTML = barangays.map(function(b) {
+    var e = el('qrRefBarangays');
+    if (!e) return;
+    e.innerHTML = barangays.map(function (b) {
       return '<div class="qr-ref-item">' +
         '<div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--brgy)"></div>' +
         '<span>' + escapeHtml(b) + '</span></div>' +
@@ -554,9 +876,9 @@
   }
 
   function addCustomBarangay() {
-    const name = (prompt('Barangay name:') || '').trim();
+    var name = (prompt('Barangay name:') || '').trim();
     if (!name) return;
-    if (!barangays.some(b => b.toLowerCase() === name.toLowerCase())) barangays.push(name);
+    if (!barangays.some(function (b) { return b.toLowerCase() === name.toLowerCase(); })) barangays.push(name);
     selectBarangay(name);
   }
 
@@ -570,33 +892,34 @@
   // ═══════════════════════════════════════════
   function setMode(mode) {
     currentMode = mode;
-    document.getElementById('modeLabel').textContent = mode === 'release' ? 'RELEASE' : 'RETURNED';
-    document.getElementById('btnRelease').classList.toggle('active', mode === 'release');
-    document.getElementById('btnReturned').classList.toggle('active', mode === 'returned');
+    el('modeLabel').textContent = mode === 'release' ? 'RELEASE' : 'RETURNED';
+    el('btnRelease').classList.toggle('active', mode === 'release');
+    el('btnReturned').classList.toggle('active', mode === 'returned');
     updateSubmitBtn();
   }
 
   async function startScanner() {
+    if (!appUnlocked) return;
     setStatus('Starting camera...'); clearResult();
-    document.getElementById('qr-reader').style.display = 'block';
+    el('qr-reader').style.display = 'block';
     html5Scanner = new Html5Qrcode('qr-reader');
-    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+    var config = { fps: 10, qrbox: { width: 220, height: 220 } };
     try {
-      await html5Scanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => {});
-      document.getElementById('btnOpen').style.display = 'none';
-      document.getElementById('btnStop').style.display = 'block';
+      await html5Scanner.start({ facingMode: 'environment' }, config, onScanSuccess, function () {});
+      el('btnOpen').style.display = 'none';
+      el('btnStop').style.display = 'block';
       setStatus('📷 Point camera at QR code...');
     } catch (err) {
       try {
-        const cameras = await Html5Qrcode.getCameras();
+        var cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
-          await html5Scanner.start(cameras[cameras.length - 1].id, config, onScanSuccess, () => {});
-          document.getElementById('btnOpen').style.display = 'none';
-          document.getElementById('btnStop').style.display = 'block';
+          await html5Scanner.start(cameras[cameras.length - 1].id, config, onScanSuccess, function () {});
+          el('btnOpen').style.display = 'none';
+          el('btnStop').style.display = 'block';
           setStatus('📷 Point camera at QR code...');
         } else throw new Error('No cameras found');
       } catch (err2) {
-        document.getElementById('qr-reader').style.display = 'none';
+        el('qr-reader').style.display = 'none';
         showResult('❌ Camera failed: ' + err2.message, 'error');
       }
     }
@@ -604,76 +927,83 @@
 
   function onScanSuccess(decodedText) {
     if (isProcessing || scanCooldown) return; scanCooldown = true;
-    const raw = decodedText.trim();
+    var raw = decodedText.trim();
 
     // 1. Category QR
-    const catMatch = VALID_CATEGORIES.find(c => c.toLowerCase() === raw.toLowerCase());
+    var catMatch = VALID_CATEGORIES.find(function (c) { return c.toLowerCase() === raw.toLowerCase(); });
     if (catMatch) {
       if (navigator.vibrate) navigator.vibrate(150);
       selectCategory(catMatch);
       setStatus('✅ Category: ' + catMatch);
-      // Only stop the camera once we have both pieces
       if (selectedBarangay) stopScanner();
       else setStatus('✅ Category: ' + catMatch + ' — now scan or tap a barangay');
-      setTimeout(() => { scanCooldown = false; }, 2000);
+      setTimeout(function () { scanCooldown = false; }, 2000);
       return;
     }
 
     // 2. Barangay QR
-    const brgyMatch = barangays.find(b => b.toLowerCase() === raw.toLowerCase());
+    var brgyMatch = barangays.find(function (b) { return b.toLowerCase() === raw.toLowerCase(); });
     if (brgyMatch || raw.toLowerCase() === UNSPECIFIED.toLowerCase()) {
-      const pick = brgyMatch || UNSPECIFIED;
+      var pick = brgyMatch || UNSPECIFIED;
       if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
       selectBarangay(pick);
       setStatus('✅ Barangay: ' + pick);
       if (selectedCategory) stopScanner();
       else setStatus('✅ Barangay: ' + pick + ' — now scan or tap a category');
-      setTimeout(() => { scanCooldown = false; }, 2000);
+      setTimeout(function () { scanCooldown = false; }, 2000);
       return;
     }
 
     setStatus('❌ Unknown QR: ' + raw);
-    setTimeout(() => { scanCooldown = false; }, 2000);
+    setTimeout(function () { scanCooldown = false; }, 2000);
   }
 
   async function stopScanner() {
-    if (html5Scanner) { try { await html5Scanner.stop(); } catch(e) {} try { html5Scanner.clear(); } catch(e) {} html5Scanner = null; }
-    document.getElementById('qr-reader').style.display = 'none';
-    document.getElementById('btnOpen').style.display = 'block';
-    document.getElementById('btnStop').style.display = 'none';
+    if (html5Scanner) {
+      try { await html5Scanner.stop(); } catch (e) {}
+      try { html5Scanner.clear(); } catch (e) {}
+      html5Scanner = null;
+    }
+    el('qr-reader').style.display = 'none';
+    el('btnOpen').style.display = 'block';
+    el('btnStop').style.display = 'none';
     setStatus('Tap Open Camera to scan');
   }
 
   function selectCategory(cat) {
     selectedCategory = cat;
-    VALID_CATEGORIES.forEach(c => document.getElementById('card-' + c).classList.toggle('selected', c === cat));
+    VALID_CATEGORIES.forEach(function (c) {
+      el('card-' + c).classList.toggle('selected', c === cat);
+    });
     updateSubmitBtn();
   }
   function selectPrice(p) {
-    price = p; document.getElementById('customPriceRow').style.display = 'none';
-    document.querySelectorAll('.price-chip').forEach(c => c.classList.remove('selected'));
-    document.querySelectorAll('.price-chip:not(.custom-chip)').forEach(c => { if (c.textContent.trim() === '₱' + p) c.classList.add('selected'); });
+    price = p; el('customPriceRow').style.display = 'none';
+    document.querySelectorAll('.price-chip').forEach(function (c) { c.classList.remove('selected'); });
+    document.querySelectorAll('.price-chip:not(.custom-chip)').forEach(function (c) {
+      if (c.textContent.trim() === '₱' + p) c.classList.add('selected');
+    });
     updateDisplays();
   }
   function showCustomPrice() {
-    document.querySelectorAll('.price-chip').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.price-chip').forEach(function (c) { c.classList.remove('selected'); });
     document.querySelector('.custom-chip').classList.add('selected');
-    document.getElementById('customPriceRow').style.display = 'flex';
-    const input = document.getElementById('customPriceInput'); input.value = price; input.focus(); input.select();
+    el('customPriceRow').style.display = 'flex';
+    var input = el('customPriceInput'); input.value = price; input.focus(); input.select();
   }
-  function onCustomPriceInput(el) { let v = parseFloat(el.value); if (isNaN(v) || v < 0) v = 0; price = v; updateDisplays(); }
-  function adjustQty(d) { quantity = Math.max(1, Math.min(9999, quantity + d)); document.getElementById('qtyDisplay').value = quantity; updateDisplays(); }
-  function onQtyInput(el) { let v = parseInt(el.value, 10); if (isNaN(v) || v < 1) v = 1; if (v > 9999) v = 9999; quantity = v; updateDisplays(); }
+  function onCustomPriceInput(e) { var v = parseFloat(e.value); if (isNaN(v) || v < 0) v = 0; price = v; updateDisplays(); }
+  function adjustQty(d) { quantity = Math.max(1, Math.min(9999, quantity + d)); el('qtyDisplay').value = quantity; updateDisplays(); }
+  function onQtyInput(e) { var v = parseInt(e.value, 10); if (isNaN(v) || v < 1) v = 1; if (v > 9999) v = 9999; quantity = v; updateDisplays(); }
   function updateDisplays() {
-    document.getElementById('priceLineDisplay').textContent = '@ ₱' + price.toFixed(2) + ' per container';
-    document.getElementById('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
+    el('priceLineDisplay').textContent = '@ ₱' + price.toFixed(2) + ' per container';
+    el('totalDisplay').textContent = '₱' + (quantity * price).toFixed(2);
     updateSubmitBtn();
   }
 
   function updateSubmitBtn() {
-    const btn = document.getElementById('submitBtn');
-    const verb = currentMode === 'returned' ? 'Return' : 'Log';
-    const grad = currentMode === 'returned'
+    var btn = el('submitBtn');
+    var verb = currentMode === 'returned' ? 'Return' : 'Log';
+    var grad = currentMode === 'returned'
       ? 'linear-gradient(135deg, #f87171, #dc2626)'
       : 'linear-gradient(135deg, #38bdf8, #0ea5e9)';
 
@@ -696,189 +1026,170 @@
   }
 
   // ═══════════════════════════════════════════
-  // SUBMIT via JSONP
+  // SUBMIT
   // ═══════════════════════════════════════════
   function submitEntry() {
-    if (isProcessing || !WEB_APP_URL || !selectedCategory || !selectedBarangay) return;
-    const qtyInput = document.getElementById('qtyDisplay');
-    let val = parseInt(qtyInput.value, 10); if (isNaN(val) || val < 1) val = 1;
+    if (isProcessing || !appUnlocked || !WEB_APP_URL || !selectedCategory || !selectedBarangay) return;
+    var qtyInput = el('qtyDisplay');
+    var val = parseInt(qtyInput.value, 10); if (isNaN(val) || val < 1) val = 1;
     quantity = val; qtyInput.value = quantity;
 
     isProcessing = true;
-    const btn = document.getElementById('submitBtn'); btn.disabled = true;
-    const verb = currentMode === 'returned' ? 'Returning' : 'Logging';
+    var btn = el('submitBtn'); btn.disabled = true;
+    var verb = currentMode === 'returned' ? 'Returning' : 'Logging';
     showSpinner(true, verb + ' ' + quantity + 'x ' + selectedCategory + ' → ' + selectedBarangay + '...');
     clearResult();
 
-    const callbackName = 'cb_' + Date.now();
-    const url = WEB_APP_URL + '?category=' + encodeURIComponent(selectedCategory) +
-      '&quantity=' + encodeURIComponent(quantity) + '&price=' + encodeURIComponent(price) +
-      '&action=' + encodeURIComponent(currentMode) +
-      '&barangay=' + encodeURIComponent(selectedBarangay) +
-      '&callback=' + callbackName;
-
-    window[callbackName] = function(data) {
-      delete window[callbackName];
-      const s = document.getElementById('jsonpScript'); if (s) s.remove();
-      showSpinner(false);
-      if (data.success) {
-        showResult(data.message, 'success');
-        document.body.style.background = currentMode === 'returned' ? '#2b0d0d' : '#0d2b1a';
-        setTimeout(() => { document.body.style.background = '#0a1628'; }, 600);
-        quantity = 1; document.getElementById('qtyDisplay').value = '1'; updateDisplays();
-        selectedCategory = null; VALID_CATEGORIES.forEach(c => document.getElementById('card-' + c).classList.remove('selected'));
-        // Barangay stays selected unless "Keep after logging" is off —
-        // one delivery run is usually all in the same barangay.
-        if (!stickyBarangay) {
-          selectedBarangay = '';
-          localStorage.removeItem('WATER_RELEASE_BRGY');
-          renderBarangayChips();
-        }
-        updateSubmitBtn();
-        setTimeout(fetchTodaysLog, 500);
-      } else {
-        showResult(data.message, 'error'); btn.disabled = false;
-      }
-      isProcessing = false;
-    };
-
-    setTimeout(() => {
-      if (window[callbackName]) {
-        delete window[callbackName];
-        const s = document.getElementById('jsonpScript'); if (s) s.remove();
+    jsonp({
+      category: selectedCategory,
+      quantity: quantity,
+      price: price,
+      action: currentMode,
+      barangay: selectedBarangay
+    }, {
+      timeout: 15000,
+      success: function (data) {
         showSpinner(false);
-        showResult('❌ Request timed out. Refreshing log to check...', 'error');
-        btn.disabled = false; isProcessing = false;
+        isProcessing = false;
+        if (data && data.success) {
+          showResult(data.message, 'success');
+          document.body.style.background = currentMode === 'returned' ? '#2b0d0d' : '#0d2b1a';
+          setTimeout(function () { document.body.style.background = '#0a1628'; }, 600);
+          quantity = 1; el('qtyDisplay').value = '1'; updateDisplays();
+          selectedCategory = null;
+          VALID_CATEGORIES.forEach(function (c) { el('card-' + c).classList.remove('selected'); });
+          // Barangay stays selected unless "Keep after logging" is off —
+          // one delivery run is usually all in the same barangay.
+          if (!stickyBarangay) {
+            selectedBarangay = '';
+            localStorage.removeItem('WATER_RELEASE_BRGY');
+            renderBarangayChips();
+          }
+          updateSubmitBtn();
+          setTimeout(fetchTodaysLog, 500);
+        } else {
+          showResult((data && data.message) || '❌ The entry was not saved.', 'error');
+          btn.disabled = false;
+        }
+      },
+      error: function (why) {
+        showSpinner(false);
+        isProcessing = false;
+        btn.disabled = false;
+        if (!appUnlocked) return;   // auth error already took over the screen
+        showResult(why === 'timeout'
+          ? '❌ Request timed out. Refreshing the log to check...'
+          : '❌ Network error. Refreshing the log to check...', 'error');
         setTimeout(fetchTodaysLog, 1000);
       }
-    }, 15000);
-
-    const script = document.createElement('script'); script.id = 'jsonpScript'; script.src = url;
-    script.onerror = function() {
-      if (window[callbackName]) {
-        delete window[callbackName]; showSpinner(false);
-        showResult('❌ Network error. Refreshing log to check...', 'error');
-        btn.disabled = false; isProcessing = false;
-        setTimeout(fetchTodaysLog, 1000);
-      }
-      this.remove();
-    };
-    document.body.appendChild(script);
+    });
   }
 
   // ═══════════════════════════════════════════
-  // LIVE LOG — Fetches today's entries from the sheet
+  // LIVE LOG
   // ═══════════════════════════════════════════
-  let logFetching = false;
+  var logFetching = false;
 
   function fetchTodaysLog() {
-    if (!WEB_APP_URL || logFetching) return;
+    if (!appUnlocked || logFetching) return;
     logFetching = true;
+    var container = el('liveLogEntries');
 
-    const container = document.getElementById('liveLogEntries');
-    const callbackName = 'logcb_' + Date.now();
-    const url = WEB_APP_URL + '?action=getTodaysLog&callback=' + callbackName;
-
-    window[callbackName] = function(data) {
-      delete window[callbackName];
-      const s = document.getElementById('logScript'); if (s) s.remove();
-      logFetching = false;
-
-      if (!data || !data.success) {
-        container.innerHTML = '<div class="live-error">Failed to load log</div>';
-        return;
-      }
-
-      document.getElementById('liveLogDate').textContent = '📅 ' + (data.date || 'Today');
-
-      const t = data.totals || {};
-      document.getElementById('statReleased').textContent = t.released || 0;
-      document.getElementById('statReturned').textContent = t.returned || 0;
-      document.getElementById('statNet').textContent = t.netQty || 0;
-      document.getElementById('statRevenue').textContent = '₱' + (t.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
-
-      // ── Today by barangay ──────────────────────────
-      const bd = document.getElementById('brgyBreakdown');
-      if (data.byBarangay && data.byBarangay.length) {
-        bd.innerHTML = '<div class="brgy-bd-title">Today by barangay</div>' +
-          '<div class="brgy-bd-list">' +
-          data.byBarangay.map(function(b) {
-            return '<div class="brgy-bd-item">' +
-              '<span class="brgy-bd-name">' + escapeHtml(b.barangay) + '</span>' +
-              '<span class="brgy-bd-val">' + b.netQty + ' · ₱' +
-              (b.revenue || 0).toFixed(0) + '</span></div>';
-          }).join('') + '</div>';
-      } else {
-        bd.innerHTML = '';
-      }
-
-      if (!data.entries || data.entries.length === 0) {
-        container.innerHTML = '<div class="live-empty">No entries today yet</div>';
-        return;
-      }
-
-      container.innerHTML = data.entries.map(function(e) {
-        const dotClass = e.category === 'Walk-in' ? 'walk-in' : e.category === 'Elf' ? 'elf' : 'tangkal';
-        const actionClass = e.action === 'Returned' ? 'returned' : 'released';
-        const actionLabel = e.action === 'Returned' ? '📥 RTN' : '📤 REL';
-        const totalColor = e.action === 'Returned' ? 'var(--error)' : 'var(--success)';
-        const sign = e.action === 'Returned' ? '-' : '';
-        const brgyLine = e.barangay
-          ? '<div class="live-brgy">🏘️ ' + escapeHtml(e.barangay) + '</div>' : '';
-
-        return '<div class="live-entry">' +
-          '<div class="live-left">' +
-            '<div class="live-dot ' + dotClass + '"></div>' +
-            '<div>' +
-              '<div class="live-cat">' + e.category +
-                ' <span class="live-action-badge ' + actionClass + '">' + actionLabel + '</span></div>' +
-              brgyLine +
-              '<div class="live-id">' + e.id + '</div>' +
-              '<div class="live-time">' + e.time + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="live-right">' +
-            '<div class="live-qty">' + e.quantity + 'x @ ₱' + (e.price || 0).toFixed(0) + '</div>' +
-            '<div class="live-total" style="color:' + totalColor + '">' + sign + '₱' + (e.total || 0).toFixed(2) + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-    };
-
-    setTimeout(() => {
-      if (window[callbackName]) {
-        delete window[callbackName];
-        const s = document.getElementById('logScript'); if (s) s.remove();
+    jsonp({ action: 'getTodaysLog' }, {
+      timeout: 12000,
+      success: function (data) {
         logFetching = false;
-        container.innerHTML = '<div class="live-error">Log fetch timed out</div>';
-      }
-    }, 12000);
+        if (!data || !data.success) {
+          container.innerHTML = '<div class="live-error">Could not load today\'s log</div>';
+          return;
+        }
 
-    const script = document.createElement('script'); script.id = 'logScript'; script.src = url;
-    script.onerror = function() {
-      if (window[callbackName]) {
-        delete window[callbackName]; logFetching = false;
-        container.innerHTML = '<div class="live-error">Could not reach server</div>';
+        el('liveLogDate').textContent = '📅 ' + (data.date || 'Today');
+
+        var t = data.totals || {};
+        el('statReleased').textContent = t.released || 0;
+        el('statReturned').textContent = t.returned || 0;
+        el('statNet').textContent = t.netQty || 0;
+        el('statRevenue').textContent = '₱' + (t.revenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+
+        var bd = el('brgyBreakdown');
+        if (data.byBarangay && data.byBarangay.length) {
+          bd.innerHTML = '<div class="brgy-bd-title">Today by barangay</div>' +
+            '<div class="brgy-bd-list">' +
+            data.byBarangay.map(function (b) {
+              return '<div class="brgy-bd-item">' +
+                '<span class="brgy-bd-name">' + escapeHtml(b.barangay) + '</span>' +
+                '<span class="brgy-bd-val">' + b.netQty + ' · ₱' +
+                (b.revenue || 0).toFixed(0) + '</span></div>';
+            }).join('') + '</div>';
+        } else {
+          bd.innerHTML = '';
+        }
+
+        if (!data.entries || data.entries.length === 0) {
+          container.innerHTML = '<div class="live-empty">No entries today yet</div>';
+          return;
+        }
+
+        container.innerHTML = data.entries.map(function (e) {
+          var dotClass = e.category === 'Walk-in' ? 'walk-in' : e.category === 'Elf' ? 'elf' : 'tangkal';
+          var actionClass = e.action === 'Returned' ? 'returned' : 'released';
+          var actionLabel = e.action === 'Returned' ? '📥 RTN' : '📤 REL';
+          var totalColor = e.action === 'Returned' ? 'var(--error)' : 'var(--success)';
+          var sign = e.action === 'Returned' ? '-' : '';
+          var brgyLine = e.barangay
+            ? '<div class="live-brgy">🏘️ ' + escapeHtml(e.barangay) + '</div>' : '';
+
+          return '<div class="live-entry">' +
+            '<div class="live-left">' +
+              '<div class="live-dot ' + dotClass + '"></div>' +
+              '<div>' +
+                '<div class="live-cat">' + escapeHtml(e.category) +
+                  ' <span class="live-action-badge ' + actionClass + '">' + actionLabel + '</span></div>' +
+                brgyLine +
+                '<div class="live-id">' + escapeHtml(e.id) + '</div>' +
+                '<div class="live-time">' + escapeHtml(e.time) + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="live-right">' +
+              '<div class="live-qty">' + e.quantity + 'x @ ₱' + (e.price || 0).toFixed(0) + '</div>' +
+              '<div class="live-total" style="color:' + totalColor + '">' + sign + '₱' + (e.total || 0).toFixed(2) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      },
+      error: function (why) {
+        logFetching = false;
+        if (!appUnlocked) return;
+        container.innerHTML = '<div class="live-error">' +
+          (why === 'timeout' ? 'Log fetch timed out' : 'Could not reach the sheet') + '</div>';
       }
-      this.remove();
-    };
-    document.body.appendChild(script);
+    });
   }
 
-  function setStatus(msg) { document.getElementById('camStatus').textContent = msg; }
-  function showSpinner(show, text) { document.getElementById('spinnerWrap').style.display = show ? 'block' : 'none'; if (text) document.getElementById('spinnerText').textContent = text; }
-  function showResult(msg, type) { const el = document.getElementById('result'); el.textContent = msg; el.className = type; el.style.display = 'block'; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-  function clearResult() { const el = document.getElementById('result'); el.style.display = 'none'; el.textContent = ''; }
-  document.addEventListener('visibilitychange', () => { if (document.hidden && html5Scanner) stopScanner(); });
+  function setStatus(msg) { el('camStatus').textContent = msg; }
+  function showSpinner(show, text) {
+    el('spinnerWrap').style.display = show ? 'block' : 'none';
+    if (text) el('spinnerText').textContent = text;
+  }
+  function showResult(msg, type) {
+    var e = el('result'); e.textContent = msg; e.className = type;
+    e.style.display = 'block'; e.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function clearResult() { var e = el('result'); e.style.display = 'none'; e.textContent = ''; }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && html5Scanner) stopScanner();
+    if (!document.hidden && !appUnlocked && DEVICE_TOKEN) checkApproval(false);
+  });
+
+  el('lockCode').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') registerThisDevice();
+  });
 
   // Boot
   renderBarangayChips();
-  if (WEB_APP_URL) {
-    fetchWaterConfig();
-    setTimeout(fetchTodaysLog, 500);
-  } else {
-    useFallbackBarangays('');
-  }
+  boot();
 </script>
 </body>
 </html>
