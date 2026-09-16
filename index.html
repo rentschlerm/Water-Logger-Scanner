@@ -101,24 +101,24 @@
     .btn-open { background: linear-gradient(135deg, var(--accent), #0ea5e9); color: var(--bg); }
     .btn-stop { background: var(--raised); color: var(--error); border: 1px solid var(--error); display: none; }
     #camStatus { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; min-height: 16px; }
-    .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px; }
     .cat-card {
       background: var(--raised); border: 2px solid var(--bdr); border-radius: 14px;
-      padding: 16px 8px; text-align: center; cursor: pointer; transition: all 0.15s;
+      padding: 16px 6px; text-align: center; cursor: pointer; transition: all 0.15s;
       position: relative; overflow: hidden;
     }
-    .cat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-    .cat-card.walk-in::before { background: var(--walkin); }
-    .cat-card.elf::before { background: var(--elf); }
-    .cat-card.tangkal::before { background: var(--tangkal); }
-    .cat-card.selected.walk-in { border-color: var(--walkin); background: rgba(34,211,238,0.08); }
-    .cat-card.selected.elf { border-color: var(--elf); background: rgba(167,139,250,0.08); }
-    .cat-card.selected.tangkal { border-color: var(--tangkal); background: rgba(251,146,60,0.08); }
+    .cat-card:active { transform: scale(0.96); }
+    .cat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--cat, var(--bdr));
+    }
+    .cat-card.selected { border-color: var(--cat, var(--accent)); background: var(--cat-soft, var(--raised)); }
     .cat-icon { font-size: 26px; margin-bottom: 6px; }
-    .cat-name { font-size: 13px; font-weight: 700; }
-    .cat-card.walk-in .cat-name { color: var(--walkin); }
-    .cat-card.elf .cat-name { color: var(--elf); }
-    .cat-card.tangkal .cat-name { color: var(--tangkal); }
+    .cat-name {
+      font-size: 12.5px; font-weight: 700; color: var(--cat, var(--text));
+      line-height: 1.2; word-break: break-word;
+    }
+    .cat-loading { font-size: 12px; color: var(--muted); padding: 6px 0; }
 
     /* ── Barangay picker ─────────────────────────────── */
     .brgy-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -250,9 +250,6 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
     .live-left { display: flex; align-items: center; gap: 10px; }
     .live-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .live-dot.walk-in { background: var(--walkin); }
-    .live-dot.elf { background: var(--elf); }
-    .live-dot.tangkal { background: var(--tangkal); }
     .live-id { font-size: 10px; color: var(--muted); font-weight: 600; }
     .live-cat { font-size: 13px; font-weight: 600; }
     .live-brgy { font-size: 11px; font-weight: 600; color: var(--brgy); }
@@ -365,16 +362,8 @@
 
 <div class="card">
   <div class="section-label">Select Category</div>
-  <div class="cat-grid">
-    <div class="cat-card walk-in" onclick="selectCategory('Walk-in')" id="card-Walk-in">
-      <div class="cat-icon">🚶</div><div class="cat-name">Walk-in</div>
-    </div>
-    <div class="cat-card elf" onclick="selectCategory('Elf')" id="card-Elf">
-      <div class="cat-icon">🧝</div><div class="cat-name">Elf</div>
-    </div>
-    <div class="cat-card tangkal" onclick="selectCategory('Tangkal')" id="card-Tangkal">
-      <div class="cat-icon">🏘️</div><div class="cat-name">Tangkal</div>
-    </div>
+  <div class="cat-grid" id="catGrid">
+    <div class="cat-loading">Loading categories…</div>
   </div>
 </div>
 
@@ -450,9 +439,7 @@
 <div class="qr-ref">
   <div class="section-label">QR Code Values</div>
   <p style="font-size:11px; color:var(--muted); margin-bottom:10px;">Create QR codes with these exact values:</p>
-  <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--walkin)"></div><span>Walk-in</span></div><span class="qr-ref-val">Walk-in</span></div>
-  <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--elf)"></div><span>Elf</span></div><span class="qr-ref-val">Elf</span></div>
-  <div class="qr-ref-item"><div class="qr-ref-left"><div class="qr-ref-dot" style="background:var(--tangkal)"></div><span>Tangkal</span></div><span class="qr-ref-val">Tangkal</span></div>
+  <div id="qrRefCategories"></div>
   <p class="qr-ref-sub">🏘️ Barangay QR codes — scanning one selects that barangay:</p>
   <div id="qrRefBarangays"></div>
 </div>
@@ -780,7 +767,67 @@
   // ═══════════════════════════════════════════
   var selectedCategory = null, quantity = 1, price = 20;
   var currentMode = 'release', html5Scanner = null, isProcessing = false, scanCooldown = false;
-  var VALID_CATEGORIES = ['Walk-in', 'Elf', 'Tangkal'];
+
+  // ── Categories ───────────────────────────────────────────
+  // The live list comes from CONFIG.waterRelease.categories on the
+  // sheet (?action=getWaterConfig). Rename or add one there and the
+  // scanner picks it up — no need to touch this file. This list is
+  // only the fallback for when the sheet can't be reached.
+  var FALLBACK_CATEGORIES = ['Walk-in', 'Elf_1', 'Tangkal_1', 'Chariot_1'];
+  var categories = FALLBACK_CATEGORIES.slice();
+
+  // Icon and colour per category name. Anything not listed gets a
+  // water drop and the next colour from the palette, so a new
+  // category still looks right before you add it here.
+  var CAT_STYLE = {
+    'Walk-in':   { icon: '🚶',  color: '#22d3ee' },
+    'Elf_1':     { icon: '🚚',  color: '#a78bfa' },
+    'Tangkal_1': { icon: '🛻',  color: '#fb923c' },
+    'Chariot_1': { icon: '🛺',  color: '#facc15' }
+  };
+  var CAT_PALETTE = ['#22d3ee', '#a78bfa', '#fb923c', '#facc15',
+                     '#4ade80', '#60a5fa', '#f9a8d4', '#2dd4bf'];
+
+  function catStyle(name, idx) {
+    if (CAT_STYLE[name]) return CAT_STYLE[name];
+    if (idx == null || idx < 0) idx = 0;
+    return { icon: '💧', color: CAT_PALETTE[idx % CAT_PALETTE.length] };
+  }
+
+  function hexToRgba(hex, alpha) {
+    var h = String(hex).replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h, 16);
+    if (isNaN(n)) return 'rgba(56,189,248,' + alpha + ')';
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
+
+  function renderCategoryCards() {
+    var grid = el('catGrid');
+    if (!grid) return;
+    grid.innerHTML = categories.map(function (c, i) {
+      var s = catStyle(c, i);
+      var sel = selectedCategory === c;
+      return '<div class="cat-card' + (sel ? ' selected' : '') + '" ' +
+        'style="--cat:' + s.color + ';--cat-soft:' + hexToRgba(s.color, 0.08) + '" ' +
+        'onclick="selectCategory(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')">' +
+        '<div class="cat-icon">' + s.icon + '</div>' +
+        '<div class="cat-name">' + escapeHtml(c) + '</div></div>';
+    }).join('');
+    renderQrRefCategories();
+  }
+
+  function renderQrRefCategories() {
+    var e = el('qrRefCategories');
+    if (!e) return;
+    e.innerHTML = categories.map(function (c, i) {
+      var s = catStyle(c, i);
+      return '<div class="qr-ref-item">' +
+        '<div class="qr-ref-left"><div class="qr-ref-dot" style="background:' + s.color + '"></div>' +
+        '<span>' + escapeHtml(c) + '</span></div>' +
+        '<span class="qr-ref-val">' + escapeHtml(c) + '</span></div>';
+    }).join('');
+  }
 
   // Used only if the server config can't be reached. Keep in sync with
   // CONFIG.waterRelease.barangays in Code.gs.
@@ -805,6 +852,16 @@
     jsonp({ action: 'getWaterConfig' }, {
       timeout: 10000,
       success: function (data) {
+        if (data && data.success && Array.isArray(data.categories) && data.categories.length) {
+          var incoming = data.categories.filter(function (c) { return c && String(c).trim(); });
+          if (incoming.length) {
+            categories = incoming;
+            // A category that was selected before a rename no longer exists
+            if (selectedCategory && categories.indexOf(selectedCategory) === -1) selectedCategory = null;
+            renderCategoryCards();
+            updateSubmitBtn();
+          }
+        }
         if (data && data.success && Array.isArray(data.barangays) && data.barangays.length) {
           barangays = data.barangays.filter(function (b) { return b && b !== UNSPECIFIED; });
           configLoaded = true;
@@ -930,7 +987,7 @@
     var raw = decodedText.trim();
 
     // 1. Category QR
-    var catMatch = VALID_CATEGORIES.find(function (c) { return c.toLowerCase() === raw.toLowerCase(); });
+    var catMatch = categories.find(function (c) { return c.toLowerCase() === raw.toLowerCase(); });
     if (catMatch) {
       if (navigator.vibrate) navigator.vibrate(150);
       selectCategory(catMatch);
@@ -972,9 +1029,7 @@
 
   function selectCategory(cat) {
     selectedCategory = cat;
-    VALID_CATEGORIES.forEach(function (c) {
-      el('card-' + c).classList.toggle('selected', c === cat);
-    });
+    renderCategoryCards();
     updateSubmitBtn();
   }
   function selectPrice(p) {
@@ -1057,7 +1112,7 @@
           setTimeout(function () { document.body.style.background = '#0a1628'; }, 600);
           quantity = 1; el('qtyDisplay').value = '1'; updateDisplays();
           selectedCategory = null;
-          VALID_CATEGORIES.forEach(function (c) { el('card-' + c).classList.remove('selected'); });
+          renderCategoryCards();
           // Barangay stays selected unless "Keep after logging" is off —
           // one delivery run is usually all in the same barangay.
           if (!stickyBarangay) {
@@ -1132,7 +1187,7 @@
         }
 
         container.innerHTML = data.entries.map(function (e) {
-          var dotClass = e.category === 'Walk-in' ? 'walk-in' : e.category === 'Elf' ? 'elf' : 'tangkal';
+          var dotColor = catStyle(e.category, categories.indexOf(e.category)).color;
           var actionClass = e.action === 'Returned' ? 'returned' : 'released';
           var actionLabel = e.action === 'Returned' ? '📥 RTN' : '📤 REL';
           var totalColor = e.action === 'Returned' ? 'var(--error)' : 'var(--success)';
@@ -1142,7 +1197,7 @@
 
           return '<div class="live-entry">' +
             '<div class="live-left">' +
-              '<div class="live-dot ' + dotClass + '"></div>' +
+              '<div class="live-dot" style="background:' + dotColor + '"></div>' +
               '<div>' +
                 '<div class="live-cat">' + escapeHtml(e.category) +
                   ' <span class="live-action-badge ' + actionClass + '">' + actionLabel + '</span></div>' +
@@ -1188,6 +1243,7 @@
   });
 
   // Boot
+  renderCategoryCards();
   renderBarangayChips();
   boot();
 </script>
